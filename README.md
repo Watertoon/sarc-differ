@@ -1,5 +1,5 @@
 # sarc-differ
-Simple command-line diff tool for Nintendo EPD "Module System" titles. Supports "sarc" and "bars" archives as well as Module System's "versioned paths".
+Simple command-line diff tool for Nintendo EPD "Module System" titles. Supports "sarc", "bars", "bntx" 4.1.0, and partial support for "bfres" 10.0.0 archives as well as Module System's "versioned paths".
 
 Usage: "sardiff.exe [left root romfs directory] [right root romfs directory]"
 

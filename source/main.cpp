@@ -17,22 +17,58 @@
 #include <zstd.h>
 #include <bit>
 #include <array>
+#include <cstring>
+#include <iostream>
 
 void _consteval_fail();
 
+namespace dd::util::math {
+    
+    using Vector2f  = float[2];
+    using Vector3f  = float[3];
+    using Vector4f  = float[4];
+    using Matrix22f = float[2][2];
+    using Matrix34f = float[3][4];
+    using Matrix44f = float[4][4];
+}
+
+struct ResBfresAnimCurve;
+
 typedef unsigned long long u64;
+typedef long long s64;
 typedef unsigned int u32;
+typedef int s32;
 typedef unsigned short u16;
+typedef short s16;
 typedef unsigned char u8;
+typedef signed char s8;
 #define ALWAYS_INLINE __attribute__((always_inline)) inline 
 
 #include "util_tstring.hpp"
 #include "util_charactercode.hpp"
 #include "util_alignment.hpp"
+#include "res_nintendowarerelocationtable.h"
+#include "res_nintendowarefileheader.hpp"
+#include "res_nintendowarerelocationtableimpl.hpp"
+#include "res_nintendowaredictionary.hpp"
+#include "res_gfxcommon.hpp"
+#include "res_bntx.hpp"
+#include "res_bfresshape.hpp"
+#include "res_bfresmaterial.hpp"
+#include "res_bfresskeleton.hpp"
+#include "res_bfresmodel.hpp"
+#include "res_bfresskeletalanim.hpp"
+#include "res_bfresmaterialanim.hpp"
+#include "res_bfresbonevisibilityanim.hpp"
+#include "res_bfresshapeanim.hpp"
+#include "res_bfressceneanim.hpp"
+#include "res_bfres.hpp"
+#include "util_alignment.hpp"
+
 #include "directoryparser.hpp"
-//#include "res_sarc.hpp"
 
 bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_t right_size, const char *right_path, u32 indent_level);
+void ProcessSingleImpl(void *file, size_t size, const char *path, u32 indent_level, bool is_right);
 
 void PrintIndent(u32 indentation_level) {
     for (u32 i = 0; i < indentation_level; ++i) {
@@ -40,192 +76,10 @@ void PrintIndent(u32 indentation_level) {
     }
 }
 
-u32 CalculateBwavSize(dd::res::ResBwav *bwav) {
-    
-    /* Header and channels sizes with alignment */
-    u32 size = dd::util::AlignUp(sizeof(dd::res::ResBwav) + bwav->channel_count * sizeof(dd::res::ResBwavChannelInfo), dd::res::ResBwav::SampleArrayAlignment);
-    
-    dd::res::ResBwavChannelInfo *channel_info = reinterpret_cast<dd::res::ResBwavChannelInfo*>(reinterpret_cast<uintptr_t>(bwav) + sizeof(dd::res::ResBwav));
-    
-    /* Aligned channel sizes */
-    for (int i = 0; i < bwav->channel_count - 1; ++i) {
-        size = size + (channel_info[i].sample_count / 14) * sizeof(u64);
-        if (channel_info[bwav->channel_count - 1].sample_count % 14 != 0) {
-            size += (channel_info[bwav->channel_count - 1].sample_count % 14) / 2 + channel_info[bwav->channel_count - 1].sample_count % 2 + 1;
-        }
-        size = dd::util::AlignUp(size, dd::res::ResBwav::SampleArrayAlignment);
-    }
-
-    /* Last channel is unaligned */
-    size = size + (channel_info[bwav->channel_count - 1].sample_count / 14) * sizeof(u64);
-    if (channel_info[bwav->channel_count - 1].sample_count % 14 != 0) {
-        size += (channel_info[bwav->channel_count - 1].sample_count % 14) / 2 + channel_info[bwav->channel_count - 1].sample_count % 2 + 1;
-    }
-    return size;
-}
-
-void DiffBars(void *left_file, void *right_file, u32 indent_level) {
-
-    /* Parse sarc directories */
-    RomfsDirectoryParser left_iterator;
-    RomfsDirectoryParser right_iterator;
-    if (left_iterator.InitializeByBars(left_file) == false)   { std::cout << "archive failure" << std::endl; return; }
-    if (right_iterator.InitializeByBars(right_file) == false) { std::cout << "archive failure" << std::endl; return; }
-
-    /* Create a sarc extractor */
-    dd::res::BarsExtractor left_bars;
-    dd::res::BarsExtractor right_bars;
-
-    if (left_bars.Initialize(left_file)   == false) { return; }
-    if (right_bars.Initialize(right_file) == false) { return; }
-
-    /* Compare every file embedded in the sarc */
-    char **left_paths = left_iterator.GetFilePathArray();
-    char **right_paths = right_iterator.GetFilePathArray();
-    for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
-        u32 index = right_iterator.FindPathIndex(left_paths[i]);
-        if (index != RomfsDirectoryParser::InvalidIndex) {
-            
-            /* Get path indexs */
-            const u32 l_index = left_bars.FindEntryIndexByName(left_paths[i]);
-            const u32 r_index = right_bars.FindEntryIndexByName(right_paths[index]);
-            
-            /* Get Amta file entries */
-            dd::res::ResAmta *l_amta = left_bars.GetAmtaByIndex(l_index);
-            dd::res::ResAmta *r_amta = right_bars.GetAmtaByIndex(r_index);
-            
-            if (l_amta->IsValid() == false || r_amta->IsValid() == false) {
-                ::puts("Invalid bwav");
-            }
-
-            const u32 l_amta_size = l_amta->file_size;
-            const u32 r_amta_size = r_amta->file_size;
-
-            /* Process Amta */
-            char path[MAX_PATH] = {};
-            ::snprintf(path, sizeof(path), "%s.bamta", right_paths[index]);
-            ProcessFilesImpl(reinterpret_cast<void*>(l_amta), l_amta_size, reinterpret_cast<void*>(r_amta), r_amta_size, path, indent_level + 1);
-            
-            /* Get Bwav file entries */
-            dd::res::ResBwav *l_bwav = left_bars.GetBwavByIndex(l_index);
-            dd::res::ResBwav *r_bwav = right_bars.GetBwavByIndex(r_index);
-            
-            if (l_bwav->IsValid() == false || r_bwav->IsValid() == false) {
-                ::puts("Invalid bwav");
-            }
-
-            const u32 l_bwav_size = CalculateBwavSize(l_bwav);
-            const u32 r_bwav_size = CalculateBwavSize(r_bwav);
-
-            /* Process bwav */
-            if (l_bwav->is_prefetch == true && r_bwav->is_prefetch == true) {
-                ::snprintf(path, sizeof(path), "%s.prefetch.bwav", right_paths[index]);
-            } else if (l_bwav->is_prefetch == false && r_bwav->is_prefetch == false) {
-                ::snprintf(path, sizeof(path), "%s.bwav", right_paths[index]);
-            } else {
-                if (l_bwav->is_prefetch == true) {
-                    ::snprintf(path, sizeof(path), "%s.bwav (left was prefetch)", right_paths[index]);
-                } else {
-                    ::snprintf(path, sizeof(path), "%s.prefetch.bwav (left was non-prefetch)", right_paths[index]);
-                }
-            }
-
-            ProcessFilesImpl(reinterpret_cast<void*>(l_bwav), l_bwav_size, reinterpret_cast<void*>(r_bwav), r_bwav_size, path, indent_level + 1);
-        }
-    }
-    
-    /* Print right only */
-    for (u32 i = 0; i < right_iterator.GetFileCount(); ++i) {
-        u32 index = left_iterator.FindPathIndex(right_paths[i]);
-        if (index == RomfsDirectoryParser::InvalidIndex) {
-            PrintIndent(indent_level + 1);
-            std::cout << "Right only: " << right_paths[i] << ".bamta" << std::endl;
-            PrintIndent(indent_level + 1);
-            
-            dd::res::ResBwav *bwav = right_bars.GetBwavByIndex(i);
-            if (bwav->is_prefetch == true) {
-                std::cout << "Right only: " << right_paths[i] << ".prefetch.bwav"  << std::endl;
-            } else {
-                std::cout << "Right only: " << right_paths[i] << ".bwav"  << std::endl;
-            }
-        }
-    }
-
-    /* Print left only */
-    for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
-        u32 index = right_iterator.FindPathIndex(left_paths[i]);
-        if (index == RomfsDirectoryParser::InvalidIndex) {
-            PrintIndent(indent_level + 1);
-            std::cout << "Left only: " << left_paths[i] << ".bamta" << std::endl;
-            PrintIndent(indent_level + 1);
-            
-            dd::res::ResBwav *bwav = left_bars.GetBwavByIndex(i);
-            if (bwav->is_prefetch == true) {
-                std::cout << "Left only: " << left_paths[i] << ".prefetch.bwav"  << std::endl;
-            } else {
-                std::cout << "Left only: " << left_paths[i] << ".bwav"  << std::endl;
-            }
-        }
-    }
-
-    /* Cleanup */
-    left_iterator.Finalize();
-    right_iterator.Finalize();
-}
-
-void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
-    
-    /* Parse sarc directories */
-    RomfsDirectoryParser left_iterator;
-    RomfsDirectoryParser right_iterator;
-    if (left_iterator.InitializeBySarc(left_file) == false)   { std::cout << "archive failure" << std::endl; return; }
-    if (right_iterator.InitializeBySarc(right_file) == false) { std::cout << "archive failure" << std::endl; return; }
-
-    /* Create a sarc extractor */
-    dd::res::SarcExtractor left_sarc;
-    dd::res::SarcExtractor right_sarc;
-
-    if (left_sarc.Initialize(left_file)   == false) { return; }
-    if (right_sarc.Initialize(right_file) == false) { return; }
-
-    /* Compare every file embedded in the sarc */
-    char **left_paths = left_iterator.GetFilePathArray();
-    char **right_paths = right_iterator.GetFilePathArray();
-    for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
-        u32 index = right_iterator.FindPathIndex(left_paths[i]);
-        if (index != RomfsDirectoryParser::InvalidIndex) {
-            /* Get file entries */
-            u32 l_size = 0;
-            u32 r_size = 0;
-            void *l_file = left_sarc.GetFileFast(std::addressof(l_size), left_sarc.ConvertPathToEntryId(left_paths[i]));
-            void *r_file = right_sarc.GetFileFast(std::addressof(r_size), right_sarc.ConvertPathToEntryId(right_paths[index]));
-            
-            ProcessFilesImpl(l_file, l_size, r_file, r_size, right_paths[index], indent_level + 1);
-        }
-    }
-    
-    /* Print right only */
-    for (u32 i = 0; i < right_iterator.GetFileCount(); ++i) {
-        u32 index = left_iterator.FindPathIndex(right_paths[i]);
-        if (index == RomfsDirectoryParser::InvalidIndex) {
-            PrintIndent(indent_level + 1);
-            std::cout << "Right only: " << right_paths[i] << std::endl;
-        }
-    }
-
-    /* Print left only*/
-    for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
-        u32 index = right_iterator.FindPathIndex(left_paths[i]);
-        if (index == RomfsDirectoryParser::InvalidIndex) {
-            PrintIndent(indent_level + 1);
-            std::cout << "Left only: " << left_paths[i] << std::endl;
-        }
-    }
-
-    /* Cleanup */
-    left_iterator.Finalize();
-    right_iterator.Finalize();
-}
+#include "diffsarc.hpp"
+#include "diffbars.hpp"
+#include "diffbntx.hpp"
+#include "diffbfres.hpp"
 
 bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char *left_file_path, const char *right_file_path) {
 
@@ -253,8 +107,8 @@ bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char 
     }
 
     /* Create file buffers */
-    void *left_file  = reinterpret_cast<void*>(new char[left_file_size]);
-    void *right_file = reinterpret_cast<void*>(new char[right_file_size]);
+    void *left_file  = reinterpret_cast<void*>(new (std::align_val_t(0x1000)) char[left_file_size]);
+    void *right_file = reinterpret_cast<void*>(new (std::align_val_t(0x1000)) char[right_file_size]);
 
     /* Load files */
     long unsigned int left_read_size = 0;
@@ -264,16 +118,16 @@ bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char 
         if (read_result == false || left_read_size != 0xFFFF'FFFF) { 
             ::CloseHandle(left_file_handle);
             ::CloseHandle(right_file_handle);
-            delete reinterpret_cast<char*>(left_file);
-            delete reinterpret_cast<char*>(right_file);
+            ::operator delete [] (reinterpret_cast<char*>(left_file),  std::align_val_t(0x1000));
+            ::operator delete [] (reinterpret_cast<char*>(right_file), std::align_val_t(0x1000));
             return false;
         }
     }
     if (::ReadFile(left_file_handle,  left_file,  left_file_size % 0xFFFFFFFF,  std::addressof(left_read_size),  nullptr) == false || left_read_size != left_file_size % 0xFFFFFFFF) { 
         ::CloseHandle(left_file_handle);
         ::CloseHandle(right_file_handle);
-        delete reinterpret_cast<char*>(left_file);
-        delete reinterpret_cast<char*>(right_file);
+        ::operator delete [] (reinterpret_cast<char*>(left_file),  std::align_val_t(0x1000));
+        ::operator delete [] (reinterpret_cast<char*>(right_file), std::align_val_t(0x1000));
         return false;
     }
     for (u32 i = 0; i < (right_file_size / 0xFFFF'FFFF); ++i) {
@@ -281,16 +135,16 @@ bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char 
         if (read_result == false || left_read_size != 0xFFFF'FFFF) { 
             ::CloseHandle(left_file_handle);
             ::CloseHandle(right_file_handle);
-            delete reinterpret_cast<char*>(left_file);
-            delete reinterpret_cast<char*>(right_file);
+            ::operator delete [] (reinterpret_cast<char*>(left_file),  std::align_val_t(0x1000));
+            ::operator delete [] (reinterpret_cast<char*>(right_file), std::align_val_t(0x1000));
             return false;
         }
     }
     if (::ReadFile(right_file_handle,  right_file,  right_file_size % 0xFFFFFFFF,  std::addressof(right_read_size),  nullptr) == false || right_read_size != right_file_size % 0xFFFFFFFF) { 
         ::CloseHandle(left_file_handle);
         ::CloseHandle(right_file_handle);
-        delete reinterpret_cast<char*>(left_file);
-        delete reinterpret_cast<char*>(right_file);
+        ::operator delete [] (reinterpret_cast<char*>(left_file),  std::align_val_t(0x1000));
+        ::operator delete [] (reinterpret_cast<char*>(right_file), std::align_val_t(0x1000));
         return false;
     }
     
@@ -303,8 +157,8 @@ bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char 
     /* Cleanup */
     ::CloseHandle(left_file_handle);
     ::CloseHandle(right_file_handle);
-    delete reinterpret_cast<char*>(left_file);
-    delete reinterpret_cast<char*>(right_file);
+    ::operator delete [] (reinterpret_cast<char*>(left_file),  std::align_val_t(0x1000));
+    ::operator delete [] (reinterpret_cast<char*>(right_file), std::align_val_t(0x1000));
     
     return true;
 }
@@ -317,7 +171,7 @@ bool TryDecompressZstd(void **out_file, size_t *out_size, void *in_file, size_t 
     }
 
     /* Allocate file buffer */
-    void *decompressed_file  = reinterpret_cast<void*>(new char[zstd_result]);
+    void *decompressed_file  = reinterpret_cast<void*>(new (std::align_val_t(0x1000)) char[zstd_result]);
     if (decompressed_file == nullptr) { return false; }
 
     /* Decompress */
@@ -336,13 +190,66 @@ enum FileType {
     FileType_Bars    = 4,
 };
 
-FileType GetFileType(void *left, void *right) {
-    if (reinterpret_cast<dd::res::ResSarc*>(left)->magic == dd::res::ResSarc::Magic && reinterpret_cast<dd::res::ResSarc*>(right)->magic == dd::res::ResSarc::Magic) {
+FileType GetFileTypeSingle(void *file) {
+    if (reinterpret_cast<dd::res::ResSarc*>(file)->magic == dd::res::ResSarc::Magic) {
         return FileType_Sarc;
-    } else if (reinterpret_cast<dd::res::ResBars*>(left)->IsValid() == true && reinterpret_cast<dd::res::ResBars*>(right)->IsValid() == true) {
+    } else if (reinterpret_cast<dd::res::ResBars*>(file)->IsValid() == true) {
         return FileType_Bars;
+    } else if (dd::res::ResBntx::IsValid(file) == true) {
+        return FileType_Bntx;
+    } else if (dd::res::ResBfres::IsValid(file) == true) {
+        return FileType_Bfres;
     }
     return FileType_Invalid;
+}
+FileType GetFileType(void *left, void *right) {
+    FileType l_type = GetFileTypeSingle(left);
+    FileType r_type = GetFileTypeSingle(right);
+    return (l_type == r_type) ? l_type : FileType_Invalid;
+}
+
+void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 indent_level, bool is_right) {
+
+    /* Decompress file if necessary */
+    void   *full      = file;
+    size_t  full_size = size;
+
+    bool  need_free = false;
+    need_free       = TryDecompressZstd(std::addressof(full), std::addressof(full_size), file, size);
+
+    /* Print file */
+    PrintIndent(indent_level);
+    if (is_right == false) {
+        std::cout << "Left only (size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
+    } else {
+        std::cout << "Right only(size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
+    }
+
+    /* Check archive type */
+    FileType type = FileType_Invalid;
+    if (0x20 <= full_size) {
+        type = GetFileTypeSingle(full);
+    }
+    switch (type) {
+        case FileType_Sarc:
+            ProcessSarcSingle(full, indent_level + 1, is_right);
+            break;
+        case FileType_Bars:
+            ProcessBarsSingle(full, indent_level + 1, is_right);
+            break;
+        case FileType_Bntx:
+            ProcessBntxSingle(full, indent_level + 1, is_right);
+            break;
+        case FileType_Bfres:
+            ProcessBfresSingle(full, indent_level + 1, is_right);
+            break;
+        default:
+            break;
+    };
+
+    if (need_free == true) {
+        ::operator delete [] (reinterpret_cast<char*>(full),  std::align_val_t(0x1000));
+    }
 }
 
 bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_t right_size, const char *right_path, u32 indent_level) {
@@ -367,12 +274,22 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
     std::cout << std::hex << "Different(left: 0x" << std::setfill('0') << std::setw(8) << left_full_size << " bytes)(right: 0x" << std::setfill('0') << std::setw(8) << right_full_size << " bytes): " << right_path << std::endl;
 
     /* Pass off to specific diff function */
-    switch (GetFileType(left_full, right_full)) {
+    FileType type = FileType_Invalid;
+    if (0x20 <= left_full_size && 0x20 <= right_full_size) {
+        type = GetFileType(left_full, right_full);
+    }
+    switch (type) {
         case FileType_Sarc:
             DiffSarc(left_full, right_full, indent_level);
             break;
         case FileType_Bars:
             DiffBars(left_full, right_full, indent_level);
+            break;
+        case FileType_Bntx:
+            DiffBntx(left_full, right_full, indent_level);
+            break;
+        case FileType_Bfres:
+            DiffBfres(left_full, right_full, indent_level);
             break;
         default:
             break;
@@ -380,17 +297,63 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
 
     /* Cleanup */
     if (need_free_left == true) {
-        delete reinterpret_cast<char*>(left_full);
+        ::operator delete [] (reinterpret_cast<char*>(left_full),  std::align_val_t(0x1000));
     }
     if (need_free_right == true) {
-        delete reinterpret_cast<char*>(right_full);
+        ::operator delete [] (reinterpret_cast<char*>(right_full),  std::align_val_t(0x1000));
     }
     
     return true;
 }
 
-int main(int argc, char **argv) {
+bool ProcessWin32Single(const char *dir_path, const char *file_path, bool is_right) {
     
+    char path[MAX_PATH]  = {};
+    ::snprintf(path,  MAX_PATH, "%s/%s", dir_path,  file_path);
+
+    /* Open file */
+    HANDLE file_handle  = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file_handle == INVALID_HANDLE_VALUE) { return false; }
+
+    /* Get size */
+    size_t file_size = 0;
+    const bool size_result  = ::GetFileSizeEx(file_handle,  reinterpret_cast<LARGE_INTEGER*>(std::addressof(file_size)));
+    if (size_result == false || file_size == INVALID_FILE_SIZE) {
+        ::CloseHandle(file_handle);
+        return false;
+    }
+
+    /* Create file buffer */
+    void *file  = reinterpret_cast<void*>(new (std::align_val_t(0x1000)) char[file_size]);
+
+    /* Load file */
+    long unsigned int read_size = 0;
+    for (u32 i = 0; i < (file_size / 0xFFFF'FFFF); ++i) {
+        bool read_result  = ::ReadFile(file_handle, file, 0xFFFF'FFFF, std::addressof(read_size),  nullptr);
+        if (read_result == false || read_size != 0xFFFF'FFFF) { 
+            ::CloseHandle(file_handle);
+            ::operator delete [] (reinterpret_cast<char*>(file),  std::align_val_t(0x1000));
+            return false;
+        }
+    }
+    if (::ReadFile(file_handle, file, file_size % 0xFFFFFFFF, std::addressof(read_size), nullptr) == false || read_size != file_size % 0xFFFFFFFF) { 
+        ::CloseHandle(file_handle);
+        ::operator delete [] (reinterpret_cast<char*>(file),  std::align_val_t(0x1000));
+        return false;
+    }
+
+    /* Process impl */
+    ProcessSingleImpl(file, file_size, file_path, 0, is_right);
+
+    /* Cleanup */
+    ::CloseHandle(file_handle);
+    ::operator delete [] (reinterpret_cast<char*>(file),  std::align_val_t(0x1000));
+
+    return true;
+}
+
+int main(int argc, char **argv) {
+
     /* Parse Options */
     if (argc != 3 || ::strcmp("-h", argv[1]) == 0 || ::strcmp("-h", argv[2]) == 0) {
         std::cout << "options(required): [left romfs dir] [right romfs dir]" << std::endl;
@@ -419,7 +382,7 @@ int main(int argc, char **argv) {
     for (u32 i = 0; i < right_iterator.GetFileCount(); ++i) {
         u32 index = left_iterator.FindPathIndex(right_paths[i]);
         if (index == RomfsDirectoryParser::InvalidIndex) {
-            std::cout << "Right only: " << right_paths[i] << std::endl;
+            ProcessWin32Single(argv[2], right_paths[i], true);
         }
     }
 
@@ -427,7 +390,7 @@ int main(int argc, char **argv) {
     for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
         u32 index = right_iterator.FindPathIndex(left_paths[i]);
         if (index == RomfsDirectoryParser::InvalidIndex) {
-            std::cout << "Left only: " << left_paths[i] << std::endl;
+            ProcessWin32Single(argv[1], left_paths[i], false);
         }
     }
 

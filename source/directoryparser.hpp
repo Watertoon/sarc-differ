@@ -2,8 +2,8 @@
  *  Copyright (C) W. Michael Knudson
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation.
+ *  it under the terms of the GNU General Public License version 2 as 
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +11,7 @@
  *  GNU General Public License for more details.
  *  
  *  You should have received a copy of the GNU General Public License along with this program; 
- *  if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  if not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
 #include <filesystem>
@@ -52,8 +52,8 @@ const char *GetRomfsPath(const char *string) {
 }*/
 
 struct StringCompare {
-    bool operator()(char *&lhs, char *&rhs) {
-        if (lhs != nullptr && rhs != nullptr && ::strcmp(lhs, rhs) <= 0) {
+    bool operator() (const char *lhs, const char *rhs) const {
+        if (lhs != nullptr && rhs != nullptr && ::strncmp(lhs, rhs, MAX_PATH) <= 0) {
             return true;
         } else {
             return false;
@@ -69,42 +69,49 @@ class RomfsDirectoryParser {
         char **m_file_paths;
         char  *m_storage;
     public:
-        constexpr ALWAYS_INLINE RomfsDirectoryParser() : m_file_count(0), m_file_paths(nullptr) {/*...*/}
-        
+        constexpr ALWAYS_INLINE RomfsDirectoryParser() : m_file_count(0), m_file_paths(nullptr), m_storage(nullptr) {/*...*/}
+
         bool Initialize(const char *path) {
 
             /* Countup romfs files */
-            std::filesystem::recursive_directory_iterator dir_counter(path);
-            std::filesystem::recursive_directory_iterator dir_iterator(path);
-            for (const auto &dir_entry : dir_counter) {
-                if (dir_entry.is_regular_file() == true) {
-                    const char *string = GetRomfsPath(dir_entry.path().string().c_str());
-                    if (::strcmp(string, "") == 0) { continue; }
-                    ++m_file_count;
+            {
+                std::filesystem::recursive_directory_iterator dir_counter(path);
+                for (const auto &dir_entry : dir_counter) {
+                    if (dir_entry.is_regular_file() == true) {
+                        std::string r_path = dir_entry.path().string();
+                        const char *string = GetRomfsPath(r_path.c_str());
+                        if (::strcmp(string, "") == 0) { continue; }
+                        ++m_file_count;
+                    }
                 }
             }
-            
+
             /* Allocate storage for file path strings */
             m_file_paths = new char*[m_file_count];
             if (m_file_paths == nullptr) { return false; }
 
             m_storage = new char[m_file_count * MAX_PATH];
-            if (m_storage == nullptr) { delete m_file_paths; m_file_paths = nullptr; return false; }
+            if (m_storage == nullptr) { delete [] m_file_paths; m_file_paths = nullptr; return false; }
 
             for (u32 i = 0; i < m_file_count; ++i) {
                 m_file_paths[i] = std::addressof(m_storage[i * MAX_PATH]);
+                m_file_paths[i][0] = '\0';
                 m_file_paths[i][MAX_PATH - 1] = '\0';
             }
 
             /* Copy all romfs file path strings */
-            u32 i = 0;
-            for (const auto &dir_entry : dir_iterator) {
-                if (dir_entry.is_regular_file() == true && i != m_file_count) {
-                    const char *string = GetRomfsPath(dir_entry.path().string().c_str());
-                    if (::strcmp(string, "") == 0) { continue; }
-                    ::strncpy(m_file_paths[i], string, MAX_PATH);
-                    m_file_paths[i][MAX_PATH - 1] = '\0';
-                    ++i;
+            {
+                std::filesystem::recursive_directory_iterator dir_iterator(path);
+                u32 i = 0;
+                for (const auto &dir_entry : dir_iterator) {
+                    if (dir_entry.is_regular_file() == true && i != m_file_count) {
+                        std::string r_path = dir_entry.path().string();
+                        const char *string = GetRomfsPath(r_path.c_str());
+                        if (::strcmp(string, "") == 0) { continue; }
+                        ::strncpy(m_file_paths[i], string, MAX_PATH);
+                        m_file_paths[i][MAX_PATH - 1] = '\0';
+                        ++i;
+                    }
                 }
             }
 
@@ -115,9 +122,37 @@ class RomfsDirectoryParser {
 
             return true;
         }
-        
+
+        bool InitializeByArrayNW(const char **array, u32 count) {
+
+            if (array == nullptr) { return false; }
+
+            /* Allocate storage for file path strings */
+            m_file_paths = new char*[count];
+            if (m_file_paths == nullptr) { return false; }
+            m_file_count = count;
+
+            m_storage = new char[m_file_count * MAX_PATH];
+            if (m_storage == nullptr) { delete [] m_file_paths; m_file_paths = nullptr; return false; }
+
+            for (u32 i = 0; i < m_file_count; ++i) {
+                m_file_paths[i] = std::addressof(m_storage[i * MAX_PATH]);
+                m_file_paths[i][MAX_PATH - 1] = '\0';
+            }
+
+            /* Copy all romfs file path strings */
+            for (u32 i = 0; i < m_file_count; ++i) {
+                const char *string = array[i] + 2;
+                if (::strcmp(string, "") == 0) { return false; }
+                ::strcpy(m_file_paths[i], string);
+                m_file_paths[i][MAX_PATH - 1] = '\0';
+            }
+
+            return true;
+        }
+
         bool InitializeBySarc(void *sarc) {
-            
+
             /* Initialize sarc extractor */
             dd::res::SarcExtractor extractor = {};
             if (extractor.Initialize(sarc) == false) { return false; }
@@ -126,9 +161,9 @@ class RomfsDirectoryParser {
             m_file_paths = new char*[extractor.GetFileCount()];
             if (m_file_paths == nullptr) { return false; }
             m_file_count = extractor.GetFileCount();
-            
+
             m_storage = new char[m_file_count * MAX_PATH];
-            if (m_storage == nullptr) { delete m_file_paths; m_file_paths = nullptr; return false; }
+            if (m_storage == nullptr) { delete [] m_file_paths; m_file_paths = nullptr; return false; }
 
             for (u32 i = 0; i < m_file_count; ++i) {
                 m_file_paths[i] = std::addressof(m_storage[i * MAX_PATH]);
@@ -149,7 +184,7 @@ class RomfsDirectoryParser {
         }
 
         bool InitializeByBars(void *bars_file) {
-            
+
             /* Initialize sarc extractor */
             dd::res::BarsExtractor extractor = {};
             if (extractor.Initialize(bars_file) == false) { return false; }
@@ -158,9 +193,9 @@ class RomfsDirectoryParser {
             m_file_paths = new char*[extractor.GetFileCount()];
             if (m_file_paths == nullptr) { return false; }
             m_file_count = extractor.GetFileCount();
-            
+
             m_storage = new char[m_file_count * MAX_PATH];
-            if (m_storage == nullptr) { delete m_file_paths; m_file_paths = nullptr; return false; }
+            if (m_storage == nullptr) { delete [] m_file_paths; m_file_paths = nullptr; return false; }
 
             for (u32 i = 0; i < m_file_count; ++i) {
                 m_file_paths[i] = std::addressof(m_storage[i * MAX_PATH]);
@@ -176,18 +211,48 @@ class RomfsDirectoryParser {
             }
 
             std::sort(m_file_paths, m_file_paths + m_file_count, StringCompare());
-    
+
+            return true;
+        }
+
+        bool InitializeByResDic(dd::res::ResNintendoWareDictionary *res_dic) {
+
+            if (res_dic == nullptr) { return false; }
+
+            /* Allocate storage for path strings */
+            m_file_paths = new char*[res_dic->node_count];
+            if (m_file_paths == nullptr) { return false; }
+            m_file_count = res_dic->node_count;
+
+            m_storage = new char[m_file_count * MAX_PATH];
+            if (m_storage == nullptr) { delete [] m_file_paths; m_file_paths = nullptr; return false; }
+
+            for (u32 i = 0; i < m_file_count; ++i) {
+                m_file_paths[i] = std::addressof(m_storage[i * MAX_PATH]);
+                m_file_paths[i][MAX_PATH - 1] = '\0';
+            }
+
+            /* Copy all res dic path strings */
+            for (u32 i = 0; i < m_file_count; ++i) {
+                const char *string = (std::addressof(res_dic->root_node) + 1)[i].key + 2;
+                if (::strcmp(string, "") == 0) { return false; }
+                ::strcpy(m_file_paths[i], string);
+                m_file_paths[i][MAX_PATH - 1] = '\0';
+            }
+
+            std::sort(m_file_paths, m_file_paths + m_file_count, StringCompare());
+
             return true;
         }
 
         void Finalize() {
             if (m_file_paths != nullptr) {
-                delete m_storage;
-                delete m_file_paths;
+                delete [] m_storage;
+                delete [] m_file_paths;
             }
             m_file_count = 0;
         }
-        
+
         u32 FindPathIndex(const char *path) {
             for (u32 i = 0; i < m_file_count; ++i) {
                 /* Special naive strcmp that omits versioning info */
@@ -226,7 +291,7 @@ class RomfsDirectoryParser {
             
             return InvalidIndex;
         }
-        
-        constexpr ALWAYS_INLINE char **GetFilePathArray() { return m_file_paths; }
-        constexpr ALWAYS_INLINE u32          GetFileCount() const { return m_file_count; }
+
+        constexpr ALWAYS_INLINE char **GetFilePathArray()       { return m_file_paths; }
+        constexpr ALWAYS_INLINE u32    GetFileCount()     const { return m_file_count; }
 };
