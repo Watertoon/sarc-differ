@@ -79,9 +79,9 @@ void ProcessResMaterialAnimSingle(dd::res::ResBfresMaterialAnim *material_anim, 
 void ProcessResBoneVisibilityAnimSingle(dd::res::ResBfresBoneVisibilityAnim *bone_visibility_anim, u32 indent_level, bool is_right) {
     PrintIndent(indent_level);
     if (is_right) {
-        std::cout << "Right only: " << (bone_visibility_anim->animation_name + 2) << ".fbvs" << std::endl;
+        std::cout << "Right only: " << (bone_visibility_anim->animation_name + 2) << ".fvba" << std::endl;
     } else {
-        std::cout << "Left only : " << (bone_visibility_anim->animation_name + 2) << ".fbvs" << std::endl;
+        std::cout << "Left only : " << (bone_visibility_anim->animation_name + 2) << ".fvba" << std::endl;
     }
 }
 

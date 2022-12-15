@@ -63,6 +63,8 @@ typedef signed char s8;
 #include "res_bfresshapeanim.hpp"
 #include "res_bfressceneanim.hpp"
 #include "res_bfres.hpp"
+#include "res_szs.hpp"
+#include "res_bea.hpp"
 #include "util_alignment.hpp"
 
 #include "directoryparser.hpp"
@@ -80,6 +82,7 @@ void PrintIndent(u32 indentation_level) {
 #include "diffbars.hpp"
 #include "diffbntx.hpp"
 #include "diffbfres.hpp"
+#include "diffbea.hpp"
 
 bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char *left_file_path, const char *right_file_path) {
 
@@ -164,6 +167,7 @@ bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char 
 }
 
 bool TryDecompressZstd(void **out_file, size_t *out_size, void *in_file, size_t file_size) {
+
     /* Check for zstd compression */
     const size_t zstd_result  = ::ZSTD_getFrameContentSize(in_file, file_size);
     if (zstd_result == ZSTD_CONTENTSIZE_ERROR || zstd_result == ZSTD_CONTENTSIZE_UNKNOWN) {
@@ -182,16 +186,41 @@ bool TryDecompressZstd(void **out_file, size_t *out_size, void *in_file, size_t 
     return true;
 }
 
+bool TryDecompressSZS(void **out_file, size_t *out_size, void *in_file, size_t file_size) {
+
+    if (file_size < sizeof(dd::res::ResSzs)) { return false; } 
+
+    /* Check for SZS compression */
+    dd::res::ResSzs *szs = reinterpret_cast<dd::res::ResSzs*>(in_file);
+    if (szs->magic != dd::res::ResSzs::Magic) {
+        return false;
+    }
+
+    /* Allocate file buffer */
+    const u32 decomp_size = dd::util::SwapEndian32(szs->decompressed_size);
+    void *decompressed_file = reinterpret_cast<void*>(new (std::align_val_t(0x1000)) char[decomp_size]);
+    if (decompressed_file == nullptr) { return false; }
+
+    /* Decompress */
+    dd::res::DecodeSZS(reinterpret_cast<u8*>(decompressed_file), szs);
+    *out_file = decompressed_file;
+    *out_size = decomp_size;
+
+    return true;
+}
+
 enum FileType {
     FileType_Invalid = 0,
     FileType_Sarc    = 1,
     FileType_Bfres   = 2,
     FileType_Bntx    = 3,
     FileType_Bars    = 4,
+    FileType_Bea     = 5,
 };
 
 FileType GetFileTypeSingle(void *file) {
-    if (reinterpret_cast<dd::res::ResSarc*>(file)->magic == dd::res::ResSarc::Magic) {
+    dd::res::SarcExtractor sarc_test = {};
+    if (sarc_test.Initialize(file) == true) {
         return FileType_Sarc;
     } else if (reinterpret_cast<dd::res::ResBars*>(file)->IsValid() == true) {
         return FileType_Bars;
@@ -199,6 +228,8 @@ FileType GetFileTypeSingle(void *file) {
         return FileType_Bntx;
     } else if (dd::res::ResBfres::IsValid(file) == true) {
         return FileType_Bfres;
+    } else if (dd::res::ResBea::IsValid(file) == true) {
+        return FileType_Bea;
     }
     return FileType_Invalid;
 }
@@ -216,6 +247,9 @@ void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 inden
 
     bool  need_free = false;
     need_free       = TryDecompressZstd(std::addressof(full), std::addressof(full_size), file, size);
+    if (need_free == false) {
+        need_free = TryDecompressSZS(std::addressof(full), std::addressof(full_size), file, size);
+    }
 
     /* Print file */
     PrintIndent(indent_level);
@@ -243,6 +277,9 @@ void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 inden
         case FileType_Bfres:
             ProcessBfresSingle(full, indent_level + 1, is_right);
             break;
+        case FileType_Bea:
+            ProcessBeaSingle(full, indent_level + 1, is_right);
+            break;
         default:
             break;
     };
@@ -268,6 +305,12 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
     bool  need_free_right = false;
     need_free_left  = TryDecompressZstd(std::addressof(left_full),  std::addressof(left_full_size), left_file,  left_size);
     need_free_right = TryDecompressZstd(std::addressof(right_full), std::addressof(right_full_size), right_file, right_size);
+    if (need_free_left == false) {
+        need_free_left = TryDecompressSZS(std::addressof(left_full), std::addressof(left_full_size), left_file, left_size);
+    }
+    if (need_free_right == false) {
+        need_free_right = TryDecompressSZS(std::addressof(right_full), std::addressof(right_full_size), right_file, right_size);
+    }
 
     /* Print out that file is different */
     PrintIndent(indent_level);
@@ -290,6 +333,9 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
             break;
         case FileType_Bfres:
             DiffBfres(left_full, right_full, indent_level);
+            break;
+        case FileType_Bea:
+            DiffBea(left_full, right_full, indent_level);
             break;
         default:
             break;

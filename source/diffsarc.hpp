@@ -18,10 +18,10 @@
 void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
 
     /* Parse sarc directories */
-    RomfsDirectoryParser left_iterator;
-    RomfsDirectoryParser right_iterator;
-    if (left_iterator.InitializeBySarc(left_file) == false)   { std::cout << "archive failure" << std::endl; return; }
-    if (right_iterator.InitializeBySarc(right_file) == false) { std::cout << "archive failure" << std::endl; return; }
+    RomfsDirectoryParser left_iterator = {};
+    RomfsDirectoryParser right_iterator = {};
+    if (left_iterator.InitializeBySarc(left_file) == false)   { std::cout << "left archive failure" << std::endl; return; }
+    if (right_iterator.InitializeBySarc(right_file) == false) { std::cout << "right archive failure" << std::endl; return; }
 
     /* Create a sarc extractor */
     dd::res::SarcExtractor left_sarc;
@@ -57,7 +57,7 @@ void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
         }
     }
 
-    /* Print left only*/
+    /* Print left only */
     for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
         u32 index = right_iterator.FindPathIndex(left_paths[i]);
         if (index == RomfsDirectoryParser::InvalidIndex) {
@@ -77,14 +77,14 @@ void ProcessSarcSingle(void *sarc_file, u32 indent_level, bool is_right) {
 
     /* Parse sarc directories */
     RomfsDirectoryParser iterator = {};
-    if (iterator.InitializeBySarc(sarc_file) == false)   { std::cout << "archive failure" << std::endl; return; }
+    if (iterator.InitializeBySarc(sarc_file) == false)   { std::cout << "single archive failure" << std::endl; return; }
 
     /* Create a sarc extractor */
     dd::res::SarcExtractor sarc = {};
 
     if (sarc.Initialize(sarc_file)   == false) { return; }
 
-    /* Compare every file embedded in the sarc */
+    /* Process every file embedded in the sarc */
     char **paths = iterator.GetFilePathArray();
     for (u32 i = 0; i < iterator.GetFileCount(); ++i) {
         /* Get file entries */

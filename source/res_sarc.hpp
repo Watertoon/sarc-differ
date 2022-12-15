@@ -83,9 +83,9 @@ namespace dd::res {
                 m_sarc = reinterpret_cast<ResSarc*>(sarc_file);
 
                 /* ResSarc integrity checks */
-                if (m_sarc->magic       != ResSarc::Magic)        { return false; }
-                if (m_sarc->endianess   != ByteOrder_Little)  { return false; }
-                if (m_sarc->header_size != sizeof(ResSarc)) { return false; }
+                if (m_sarc->magic       != ResSarc::Magic)   { return false; }
+                if (m_sarc->endianess   != ByteOrder_Little) { return false; }
+                if (m_sarc->header_size != sizeof(ResSarc))  { return false; }
 
                 m_sfat = reinterpret_cast<ResSfat*>(reinterpret_cast<uintptr_t>(sarc_file) + sizeof(ResSarc));
 
