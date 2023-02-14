@@ -124,7 +124,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
             char path[MAX_PATH] = {};
             ::snprintf(path, sizeof(path), "%s.bamta", right_paths[i]);
             
-            ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, true);
+            ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, PrintSide::Right);
 
             if (bwav->is_prefetch == true) {
                 ::snprintf(path, sizeof(path), "%s.prefetch.bwav", right_paths[i]);
@@ -132,7 +132,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
                 ::snprintf(path, sizeof(path), "%s.bwav", right_paths[i]);
             }
 
-            ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, true);
+            ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, PrintSide::Right);
         }
     }
 
@@ -152,7 +152,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
             char path[MAX_PATH] = {};
             ::snprintf(path, sizeof(path), "%s.bamta", left_paths[i]);
             
-            ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, false);
+            ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, PrintSide::Left);
 
             if (bwav->is_prefetch == true) {
                 ::snprintf(path, sizeof(path), "%s.prefetch.bwav", left_paths[i]);
@@ -160,7 +160,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
                 ::snprintf(path, sizeof(path), "%s.bwav", left_paths[i]);
             }
 
-            ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, false);
+            ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, PrintSide::Left);
         }
     }
 
@@ -169,7 +169,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
     right_iterator.Finalize();
 }
 
-void ProcessBarsSingle(void *file, u32 indent_level, bool is_right) {
+void ProcessBarsSingle(void *file, u32 indent_level, PrintSide print_side) {
 
     /* Parse sarc directories */
     RomfsDirectoryParser iterator = {};
@@ -198,7 +198,7 @@ void ProcessBarsSingle(void *file, u32 indent_level, bool is_right) {
         /* Process Amta */
         char path[MAX_PATH] = {};
         ::snprintf(path, sizeof(path), "%s.bamta", paths[i]);
-        ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, is_right);
+        ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, print_side);
         
         /* Get Bwav file entries */
         dd::res::ResBwav *bwav = bars.GetBwavByIndex(index);
@@ -216,7 +216,7 @@ void ProcessBarsSingle(void *file, u32 indent_level, bool is_right) {
             ::snprintf(path, sizeof(path), "%s.bwav", paths[i]);
         }
 
-        ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, is_right);
+        ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, print_side);
     }
         
     /* Cleanup */

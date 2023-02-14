@@ -63,7 +63,7 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
 
             /* Print diff */
             PrintIndent(indent_level + 1);
-            std::cout <<  "Different (left: 0x"  << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " right: 0x"  << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[r_index])->mipmap_total_size << "): " << r_paths[r_index]  << ".ftex" << std::endl;
+            std::cout <<  "Different(left: 0x"  << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " bytes)(right: 0x"  << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[r_index])->mipmap_total_size << " bytes): " << r_paths[r_index]  << ".ftex" << std::endl;
         }
     }
 
@@ -72,7 +72,7 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
         u32 l_index = l_iterator.FindPathIndex(r_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
             PrintIndent(indent_level + 1);
-            std::cout <<  "Right only (size: 0x" << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[i])->mipmap_total_size << "): " << r_paths[i]  << ".ftex" << std::endl;
+            std::cout <<  "Right only(size: 0x" << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[i])->mipmap_total_size << " bytes): " << r_paths[i]  << ".ftex" << std::endl;
         }
     }
 
@@ -81,7 +81,7 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
         u32 r_index = r_iterator.FindPathIndex(l_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
             PrintIndent(indent_level + 1);
-            std::cout <<  "Left only(size: 0x" << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << "): " << l_paths[i]  << ".ftex" << std::endl;
+            std::cout <<  "Left only (size: 0x" << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " bytes): " << l_paths[i]  << ".ftex" << std::endl;
         }
     }
 
@@ -90,7 +90,7 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
     r_iterator.Finalize();
 }
 
-void ProcessBntxSingle(void *file, u32 indent_level, bool is_right) {
+void ProcessBntxSingle(void *file, u32 indent_level, PrintSide print_side) {
 
     /* Rescast */
     dd::res::ResBntx *bntx = dd::res::ResBntx::ResCast(file);
@@ -103,13 +103,10 @@ void ProcessBntxSingle(void *file, u32 indent_level, bool is_right) {
     char **paths = iterator.GetFilePathArray();
     for (u32 i = 0; i < iterator.GetFileCount(); ++i) {
         PrintIndent(indent_level);
-        if (is_right) {
-            std::cout << "Right only(size: 0x" << std::setfill('0') << std::setw(8) << bntx->FindTexture(paths[i])->mipmap_total_size << "): " << paths[i] << ".ftex" << std::endl;
-        } else {
-            std::cout << "Left only (size: 0x" << std::setfill('0') << std::setw(8) << bntx->FindTexture(paths[i])->mipmap_total_size << "): " << paths[i] << ".ftex" << std::endl;
-        }
+        PrintOnlySide(print_side);
+        std::cout << "(size: 0x" << std::setfill('0') << std::setw(8) << bntx->FindTexture(paths[i])->mipmap_total_size << " bytes): " << paths[i] << ".ftex" << std::endl;
     }
-    
+
     /* Cleanup */
     iterator.Finalize();
 }

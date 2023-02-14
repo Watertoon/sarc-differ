@@ -48,7 +48,7 @@ void DiffBea(void *left_file, void *right_file, u32 indent_level) {
             s32 entry = r_bea->file_dictionary->FindEntryIndex(right_paths[i]);
             dd::res::ResBeaFileEntry *file_entry = r_bea->file_entry_array[entry];
 
-            ProcessSingleImpl(r_bea->GetFile(file_entry), file_entry->compressed_size, right_paths[i], indent_level + 1, true);
+            ProcessSingleImpl(r_bea->GetFile(file_entry), file_entry->compressed_size, right_paths[i], indent_level + 1, PrintSide::Right);
         }
     }
 
@@ -59,7 +59,7 @@ void DiffBea(void *left_file, void *right_file, u32 indent_level) {
             s32 entry = l_bea->file_dictionary->FindEntryIndex(left_paths[i]);
             dd::res::ResBeaFileEntry *file_entry = l_bea->file_entry_array[entry];
 
-            ProcessSingleImpl(l_bea->GetFile(file_entry), file_entry->compressed_size, left_paths[i], indent_level + 1, true);
+            ProcessSingleImpl(l_bea->GetFile(file_entry), file_entry->compressed_size, left_paths[i], indent_level + 1, PrintSide::Left);
         }
     }
 
@@ -68,14 +68,14 @@ void DiffBea(void *left_file, void *right_file, u32 indent_level) {
     right_iterator.Finalize();
 }
 
-void ProcessBeaSingle(void *bea_file, u32 indent_level, bool is_right) {
+void ProcessBeaSingle(void *bea_file, u32 indent_level, PrintSide print_side) {
 
     /* Res cast */
     dd::res::ResBea *bea = dd::res::ResBea::ResCast(bea_file);
 
     /* Parse sarc directories */
     RomfsDirectoryParser iterator = {};
-    if (iterator.InitializeByResDic(bea->file_dictionary) == false)   { std::cout << "single archive failure" << std::endl; return; }
+    if (iterator.InitializeByResDic(bea->file_dictionary) == false) { std::cout << "single bea archive failure" << std::endl; return; }
 
     /* Process every file embedded in the bea */
     char **paths = iterator.GetFilePathArray();
@@ -83,7 +83,7 @@ void ProcessBeaSingle(void *bea_file, u32 indent_level, bool is_right) {
         s32 entry = bea->file_dictionary->FindEntryIndex(paths[i]);
         dd::res::ResBeaFileEntry *file_entry = bea->file_entry_array[entry];
 
-        ProcessSingleImpl(bea->GetFile(file_entry), file_entry->compressed_size, paths[i], indent_level + 1, is_right);
+        ProcessSingleImpl(bea->GetFile(file_entry), file_entry->compressed_size, paths[i], indent_level + 1, print_side);
     }
 
     /* Cleanup */

@@ -22,6 +22,20 @@
 
 void _consteval_fail();
 
+/* Requires is_print and indent_level to be defined */
+#define DIFF_RESULT(format, ...) \
+if (is_print == true) { \
+    PrintIndent(indent_level); \
+    ::printf(format, __VA_ARGS__); \
+} else { \
+    return true; \
+}
+
+#define DIFF_IF(conditional, format, ...) \
+if ((conditional) == true) { \
+    CONDITIONAL_DIFF(format, __VA_ARGS__); \
+}
+
 namespace dd::util::math {
     
     using Vector2f  = float[2];
@@ -43,6 +57,12 @@ typedef short s16;
 typedef unsigned char u8;
 typedef signed char s8;
 #define ALWAYS_INLINE __attribute__((always_inline)) inline 
+
+enum class PrintSide : u32 {
+    None  = 0,
+    Left  = 1,
+    Right = 2
+};
 
 #include "util_tstring.hpp"
 #include "util_charactercode.hpp"
@@ -70,7 +90,7 @@ typedef signed char s8;
 #include "directoryparser.hpp"
 
 bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_t right_size, const char *right_path, u32 indent_level);
-void ProcessSingleImpl(void *file, size_t size, const char *path, u32 indent_level, bool is_right);
+void ProcessSingleImpl(void *file, size_t size, const char *path, u32 indent_level, PrintSide print_side);
 
 void PrintIndent(u32 indentation_level) {
     for (u32 i = 0; i < indentation_level; ++i) {
@@ -78,9 +98,57 @@ void PrintIndent(u32 indentation_level) {
     }
 }
 
+void PrintOnlySide(PrintSide print_side) {
+    switch (print_side) {
+        default:
+        case PrintSide::None:
+            return;
+        case PrintSide::Left:
+            std::cout << "Left only ";
+            break;
+        case PrintSide::Right:
+            std::cout << "Right only";
+            break;
+    }
+    return;
+}
+
+void PrintSideNoSpace(PrintSide print_side) {
+    switch (print_side) {
+        default:
+        case PrintSide::None:
+            return;
+        case PrintSide::Left:
+            std::cout << "Left ";
+            break;
+        case PrintSide::Right:
+            std::cout << "Right";
+            break;
+    }
+    return;
+}
+
+void PrintSideSpace(PrintSide print_side) {
+    switch (print_side) {
+        default:
+        case PrintSide::None:
+            return;
+        case PrintSide::Left:
+            std::cout << "left ";
+            break;
+        case PrintSide::Right:
+            std::cout << "right ";
+            break;
+    }
+    return;
+}
+
 #include "diffsarc.hpp"
 #include "diffbars.hpp"
+#include "diffgfxembedfile.hpp"
 #include "diffbntx.hpp"
+#include "diffbfresmaterial.hpp"
+#include "diffbfresmodel.hpp"
 #include "diffbfres.hpp"
 #include "diffbea.hpp"
 
@@ -239,7 +307,7 @@ FileType GetFileType(void *left, void *right) {
     return (l_type == r_type) ? l_type : FileType_Invalid;
 }
 
-void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 indent_level, bool is_right) {
+void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 indent_level, PrintSide print_side) {
 
     /* Decompress file if necessary */
     void   *full      = file;
@@ -253,11 +321,8 @@ void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 inden
 
     /* Print file */
     PrintIndent(indent_level);
-    if (is_right == false) {
-        std::cout << "Left only (size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
-    } else {
-        std::cout << "Right only(size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
-    }
+    PrintOnlySide(print_side);
+    std::cout << "(size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
 
     /* Check archive type */
     FileType type = FileType_Invalid;
@@ -266,19 +331,19 @@ void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 inden
     }
     switch (type) {
         case FileType_Sarc:
-            ProcessSarcSingle(full, indent_level + 1, is_right);
+            ProcessSarcSingle(full, indent_level + 1, print_side);
             break;
         case FileType_Bars:
-            ProcessBarsSingle(full, indent_level + 1, is_right);
+            ProcessBarsSingle(full, indent_level + 1, print_side);
             break;
         case FileType_Bntx:
-            ProcessBntxSingle(full, indent_level + 1, is_right);
+            ProcessBntxSingle(full, indent_level + 1, print_side);
             break;
         case FileType_Bfres:
-            ProcessBfresSingle(full, indent_level + 1, is_right);
+            ProcessBfresSingle(full, indent_level + 1, print_side);
             break;
         case FileType_Bea:
-            ProcessBeaSingle(full, indent_level + 1, is_right);
+            ProcessBeaSingle(full, indent_level + 1, print_side);
             break;
         default:
             break;
@@ -332,7 +397,7 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
             DiffBntx(left_full, right_full, indent_level);
             break;
         case FileType_Bfres:
-            DiffBfres(left_full, right_full, indent_level);
+            DiffBfres(left_full, right_full, indent_level, true);
             break;
         case FileType_Bea:
             DiffBea(left_full, right_full, indent_level);
@@ -352,7 +417,7 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
     return true;
 }
 
-bool ProcessWin32Single(const char *dir_path, const char *file_path, bool is_right) {
+bool ProcessWin32Single(const char *dir_path, const char *file_path, PrintSide print_side) {
     
     char path[MAX_PATH]  = {};
     ::snprintf(path,  MAX_PATH, "%s/%s", dir_path,  file_path);
@@ -389,7 +454,7 @@ bool ProcessWin32Single(const char *dir_path, const char *file_path, bool is_rig
     }
 
     /* Process impl */
-    ProcessSingleImpl(file, file_size, file_path, 0, is_right);
+    ProcessSingleImpl(file, file_size, file_path, 0, print_side);
 
     /* Cleanup */
     ::CloseHandle(file_handle);
@@ -428,7 +493,7 @@ int main(int argc, char **argv) {
     for (u32 i = 0; i < right_iterator.GetFileCount(); ++i) {
         u32 index = left_iterator.FindPathIndex(right_paths[i]);
         if (index == RomfsDirectoryParser::InvalidIndex) {
-            ProcessWin32Single(argv[2], right_paths[i], true);
+            ProcessWin32Single(argv[2], right_paths[i], PrintSide::Right);
         }
     }
 
@@ -436,7 +501,7 @@ int main(int argc, char **argv) {
     for (u32 i = 0; i < left_iterator.GetFileCount(); ++i) {
         u32 index = right_iterator.FindPathIndex(left_paths[i]);
         if (index == RomfsDirectoryParser::InvalidIndex) {
-            ProcessWin32Single(argv[1], left_paths[i], false);
+            ProcessWin32Single(argv[1], left_paths[i], PrintSide::Left);
         }
     }
 

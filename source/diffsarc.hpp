@@ -53,7 +53,7 @@ void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
             u32 size = 0;
             void *file = right_sarc.GetFileFast(std::addressof(size), right_sarc.ConvertPathToEntryId(right_paths[i]));
 
-            ProcessSingleImpl(file, size, right_paths[i], indent_level + 1, true);
+            ProcessSingleImpl(file, size, right_paths[i], indent_level + 1, PrintSide::Right);
         }
     }
 
@@ -64,7 +64,7 @@ void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
             u32 size = 0;
             void *file = left_sarc.GetFileFast(std::addressof(size), left_sarc.ConvertPathToEntryId(left_paths[i]));
 
-            ProcessSingleImpl(file, size, left_paths[i], indent_level + 1, false);
+            ProcessSingleImpl(file, size, left_paths[i], indent_level + 1, PrintSide::Left);
         }
     }
 
@@ -73,16 +73,16 @@ void DiffSarc(void *left_file, void *right_file, u32 indent_level) {
     right_iterator.Finalize();
 }
 
-void ProcessSarcSingle(void *sarc_file, u32 indent_level, bool is_right) {
+void ProcessSarcSingle(void *sarc_file, u32 indent_level, PrintSide print_side) {
 
     /* Parse sarc directories */
     RomfsDirectoryParser iterator = {};
-    if (iterator.InitializeBySarc(sarc_file) == false)   { std::cout << "single archive failure" << std::endl; return; }
+    if (iterator.InitializeBySarc(sarc_file) == false) { std::cout << "single sarc failure" << std::endl; return; }
 
     /* Create a sarc extractor */
     dd::res::SarcExtractor sarc = {};
 
-    if (sarc.Initialize(sarc_file)   == false) { return; }
+    if (sarc.Initialize(sarc_file) == false) { return; }
 
     /* Process every file embedded in the sarc */
     char **paths = iterator.GetFilePathArray();
@@ -91,7 +91,7 @@ void ProcessSarcSingle(void *sarc_file, u32 indent_level, bool is_right) {
         u32 size = 0;
         void *file = sarc.GetFileFast(std::addressof(size), sarc.ConvertPathToEntryId(paths[i]));
 
-        ProcessSingleImpl(file, size,  paths[i], indent_level + 1, is_right);
+        ProcessSingleImpl(file, size,  paths[i], indent_level + 1, print_side);
     }
 
     /* Cleanup */
