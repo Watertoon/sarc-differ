@@ -147,6 +147,9 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
             const bool is_same = DiffBfresModel(l_model, r_model, indent_level + 1, false);
             if (is_same == true) { continue; }
             if (is_print == false) { return false; }
+            
+            PrintIndent(indent_level + 1);
+            std::cout << "Different: " << (l_model->model_name + 2) << ".fmdl" << std::endl;
             DiffBfresModel(l_model, r_model, indent_level + 1, true);
         }
     }
@@ -169,6 +172,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_model_iterator.GetFileCount(); ++i) {
         u32 l_index = l_model_iterator.FindPathIndex(r_model_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresModel *model = r_bfres->model_array + r_bfres->model_dictionary->FindEntryIndex(r_model_paths[i]);
             ProcessResModelSingle(model, indent_level + 1, PrintSide::Right);
         }
@@ -178,6 +183,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_skeletal_anim_iterator.GetFileCount(); ++i) {
         u32 l_index = l_skeletal_anim_iterator.FindPathIndex(r_skeletal_anim_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresSkeletalAnim *skeletal_anim = r_bfres->skeletal_anim_array + r_bfres->skeletal_anim_dictionary->FindEntryIndex(r_skeletal_anim_paths[i]);
             ProcessResSkeletalAnimSingle(skeletal_anim, indent_level + 1, PrintSide::Right);
         }
@@ -187,6 +194,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_material_anim_iterator.GetFileCount(); ++i) {
         u32 l_index = l_material_anim_iterator.FindPathIndex(r_material_anim_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresMaterialAnim *material_anim = r_bfres->material_anim_array + r_bfres->material_anim_dictionary->FindEntryIndex(r_material_anim_paths[i]);
             ProcessResMaterialAnimSingle(material_anim, indent_level + 1, PrintSide::Right);
         }
@@ -196,6 +205,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_bone_visibility_anim_iterator.GetFileCount(); ++i) {
         u32 l_index = l_bone_visibility_anim_iterator.FindPathIndex(r_bone_visibility_anim_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresBoneVisibilityAnim *bone_visibility_anim = r_bfres->bone_visibility_anim_array + r_bfres->bone_visibility_anim_dictionary->FindEntryIndex(r_bone_visibility_anim_paths[i]);
             ProcessResBoneVisibilityAnimSingle(bone_visibility_anim, indent_level + 1, PrintSide::Right);
         }
@@ -205,6 +216,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_shape_anim_iterator.GetFileCount(); ++i) {
         u32 l_index = l_shape_anim_iterator.FindPathIndex(r_shape_anim_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresShapeAnim *shape_anim = r_bfres->shape_anim_array + r_bfres->shape_anim_dictionary->FindEntryIndex(r_shape_anim_paths[i]);
             ProcessResShapeAnimSingle(shape_anim, indent_level + 1, PrintSide::Right);
         }
@@ -214,6 +227,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_scene_anim_iterator.GetFileCount(); ++i) {
         u32 l_index = l_scene_anim_iterator.FindPathIndex(r_scene_anim_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresSceneAnim *scene_anim = r_bfres->scene_anim_array + r_bfres->scene_anim_dictionary->FindEntryIndex(r_scene_anim_paths[i]);
             ProcessResSceneAnimSingle(scene_anim, indent_level + 1, PrintSide::Right);
         }
@@ -223,6 +238,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < r_embed_file_iterator.GetFileCount(); ++i) {
         u32 l_index = l_embed_file_iterator.FindPathIndex(r_embed_file_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResGfxEmbedFile *embed_file = r_bfres->embed_file_array + r_bfres->embed_file_dictionary->FindEntryIndex(r_embed_file_paths[i]);
             ProcessSingleImpl(embed_file->file_offset, embed_file->file_size, r_embed_file_paths[i], indent_level + 1, PrintSide::Right);
         }
@@ -232,6 +249,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_model_iterator.GetFileCount(); ++i) {
         u32 r_index = r_model_iterator.FindPathIndex(l_model_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresModel *model = l_bfres->model_array + l_bfres->model_dictionary->FindEntryIndex(l_model_paths[i]);
             ProcessResModelSingle(model, indent_level + 1, PrintSide::Left);
         }
@@ -241,6 +260,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_skeletal_anim_iterator.GetFileCount(); ++i) {
         u32 r_index = r_skeletal_anim_iterator.FindPathIndex(l_skeletal_anim_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresSkeletalAnim *skeletal_anim = l_bfres->skeletal_anim_array + l_bfres->skeletal_anim_dictionary->FindEntryIndex(l_skeletal_anim_paths[i]);
             ProcessResSkeletalAnimSingle(skeletal_anim, indent_level + 1, PrintSide::Left);
         }
@@ -250,6 +271,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_material_anim_iterator.GetFileCount(); ++i) {
         u32 r_index = r_material_anim_iterator.FindPathIndex(l_material_anim_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresMaterialAnim *material_anim = l_bfres->material_anim_array + l_bfres->material_anim_dictionary->FindEntryIndex(l_material_anim_paths[i]);
             ProcessResMaterialAnimSingle(material_anim, indent_level + 1, PrintSide::Left);
         }
@@ -259,6 +282,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_bone_visibility_anim_iterator.GetFileCount(); ++i) {
         u32 r_index = r_bone_visibility_anim_iterator.FindPathIndex(l_bone_visibility_anim_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresBoneVisibilityAnim *bone_visibility_anim = l_bfres->bone_visibility_anim_array + l_bfres->bone_visibility_anim_dictionary->FindEntryIndex(l_bone_visibility_anim_paths[i]);
             ProcessResBoneVisibilityAnimSingle(bone_visibility_anim, indent_level + 1, PrintSide::Left);
         }
@@ -268,6 +293,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_shape_anim_iterator.GetFileCount(); ++i) {
         u32 r_index = r_shape_anim_iterator.FindPathIndex(l_shape_anim_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresShapeAnim *shape_anim = l_bfres->shape_anim_array + l_bfres->shape_anim_dictionary->FindEntryIndex(l_shape_anim_paths[i]);
             ProcessResShapeAnimSingle(shape_anim, indent_level + 1, PrintSide::Left);
         }
@@ -277,6 +304,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_scene_anim_iterator.GetFileCount(); ++i) {
         u32 r_index = r_scene_anim_iterator.FindPathIndex(l_scene_anim_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResBfresSceneAnim *scene_anim = l_bfres->scene_anim_array + l_bfres->scene_anim_dictionary->FindEntryIndex(l_scene_anim_paths[i]);
             ProcessResSceneAnimSingle(scene_anim, indent_level + 1, PrintSide::Left);
         }
@@ -286,6 +315,8 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
     for (u32 i = 0; i < l_embed_file_iterator.GetFileCount(); ++i) {
         u32 r_index = r_embed_file_iterator.FindPathIndex(l_embed_file_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            if (is_print == false) { return false; }
+
             dd::res::ResGfxEmbedFile *embed_file = l_bfres->embed_file_array + l_bfres->embed_file_dictionary->FindEntryIndex(l_embed_file_paths[i]);
             ProcessSingleImpl(embed_file->file_offset, embed_file->file_size, l_embed_file_paths[i], indent_level + 1, PrintSide::Left);
         }

@@ -198,7 +198,7 @@ void ProcessBarsSingle(void *file, u32 indent_level, PrintSide print_side) {
         /* Process Amta */
         char path[MAX_PATH] = {};
         ::snprintf(path, sizeof(path), "%s.bamta", paths[i]);
-        ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level + 1, print_side);
+        ProcessSingleImpl(reinterpret_cast<void*>(amta), amta_size, path, indent_level, print_side);
         
         /* Get Bwav file entries */
         dd::res::ResBwav *bwav = bars.GetBwavByIndex(index);
@@ -216,7 +216,7 @@ void ProcessBarsSingle(void *file, u32 indent_level, PrintSide print_side) {
             ::snprintf(path, sizeof(path), "%s.bwav", paths[i]);
         }
 
-        ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level + 1, print_side);
+        ProcessSingleImpl(reinterpret_cast<void*>(bwav), bwav_size, path, indent_level, print_side);
     }
         
     /* Cleanup */

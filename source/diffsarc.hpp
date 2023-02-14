@@ -91,7 +91,7 @@ void ProcessSarcSingle(void *sarc_file, u32 indent_level, PrintSide print_side) 
         u32 size = 0;
         void *file = sarc.GetFileFast(std::addressof(size), sarc.ConvertPathToEntryId(paths[i]));
 
-        ProcessSingleImpl(file, size,  paths[i], indent_level + 1, print_side);
+        ProcessSingleImpl(file, size,  paths[i], indent_level, print_side);
     }
 
     /* Cleanup */
