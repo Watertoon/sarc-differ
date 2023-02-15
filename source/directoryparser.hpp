@@ -70,6 +70,9 @@ class RomfsDirectoryParser {
         char  *m_storage;
     public:
         constexpr ALWAYS_INLINE RomfsDirectoryParser() : m_file_count(0), m_file_paths(nullptr), m_storage(nullptr) {/*...*/}
+        ~RomfsDirectoryParser() {
+            this->Finalize();
+        }
 
         bool Initialize(const char *path) {
 
@@ -247,9 +250,13 @@ class RomfsDirectoryParser {
 
         void Finalize() {
             if (m_file_paths != nullptr) {
-                delete [] m_storage;
                 delete [] m_file_paths;
             }
+            if (m_storage != nullptr) {
+                delete [] m_storage;
+            }
+            m_file_paths = nullptr;
+            m_storage = nullptr;
             m_file_count = 0;
         }
 

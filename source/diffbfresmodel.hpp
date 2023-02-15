@@ -24,8 +24,8 @@ void ProcessResModelSingle(dd::res::ResBfresModel *model, u32 indent_level, Prin
         PrintOnlySide(print_side);
         std::cout << ": " << material_paths[i] << ".fmat" << std::endl;
 
-        //dd::res::ResBfresMaterial *material = model->material_array + model->material_dictionary->FindEntryIndex(material_paths[i]);
-        //ProcessResMaterialSingle(material, indent_level + 1, print_side);
+        dd::res::ResBfresMaterial *material = model->material_array + model->material_dictionary->FindEntryIndex(material_paths[i]);
+        ProcessResMaterialSingle(material, indent_level + 1, print_side);
     }
 
     /* cleanup */

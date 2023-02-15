@@ -207,10 +207,6 @@ namespace dd::res {
             return nullptr;
         }
 
-        ALWAYS_INLINE const char * GetShaderVertexAttributeName(u32 entry_index) {
-            return material_shader_data->shader_reflection->vertex_attribute_dictionary->FindKeyByEntryIndex((material_shader_data->vertex_attribute_index_array != nullptr) ? material_shader_data->vertex_attribute_index_array[entry_index] : entry_index);
-        }
-
         ALWAYS_INLINE const char *GetShaderSamplerName(const char *sampler_name) {
             for (u32 i = 0; i < material_shader_data->sampler_count; ++i) {
                 if (::strcmp(material_shader_data->sampler_name_array[i] + 2, sampler_name) == 0) { return material_shader_data->shader_reflection->sampler_dictionary->FindKeyByEntryIndex((material_shader_data->sampler_index_array != nullptr) ? material_shader_data->sampler_index_array[i] : i); }
@@ -218,8 +214,14 @@ namespace dd::res {
             return nullptr; 
         }
 
-        ALWAYS_INLINE const char *GetShaderSamplerName(u32 entry_index) {
-            return material_shader_data->shader_reflection->sampler_dictionary->FindKeyByEntryIndex((material_shader_data->sampler_index_array != nullptr) ? material_shader_data->sampler_index_array[entry_index] : entry_index);
+        ALWAYS_INLINE const char *GetTextureName(const char *sampler_name) {
+            const u32 entry_index = sampler_dictionary->FindEntryIndex(sampler_name);
+            return (entry_index != 0xffff'ffff) ? texture_name_array[entry_index] : nullptr;
+        }
+
+        ALWAYS_INLINE ResGfxSamplerInfo *GetSamplerInfo(const char *sampler_name) {
+            const u32 entry_index = sampler_dictionary->FindEntryIndex(sampler_name);
+            return (entry_index != 0xffff'ffff) ? std::addressof(sampler_info_array[entry_index]) : nullptr;
         }
 
         static constexpr u32 Magic = util::TCharCode32("FMAT");

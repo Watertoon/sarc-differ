@@ -691,23 +691,31 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
 
     RomfsDirectoryParser l_render_info_iterator = {};
     l_render_info_iterator.InitializeByResDic(l_material->material_shader_data->shader_reflection->render_info_dictionary);
+
     RomfsDirectoryParser l_shader_param_iterator = {};
     l_shader_param_iterator.InitializeByResDic(l_material->material_shader_data->shader_reflection->shader_param_dictionary);
+
     RomfsDirectoryParser l_vertex_attribute_iterator = {};
     l_vertex_attribute_iterator.InitializeByArrayNW(l_material->material_shader_data->vertex_attribute_name_array, l_material->material_shader_data->vertex_attribute_count);
+
     RomfsDirectoryParser l_sampler_iterator = {};
-    l_sampler_iterator.InitializeByArrayNW(l_material->material_shader_data->sampler_name_array, l_material->material_shader_data->sampler_count);
+    l_sampler_iterator.InitializeByResDic(l_material->sampler_dictionary);
+
     RomfsDirectoryParser l_static_shader_option_iterator = {};
     l_static_shader_option_iterator.InitializeByResDic(l_material->material_shader_data->shader_reflection->static_shader_option_dictionary);
 
     RomfsDirectoryParser r_render_info_iterator = {};
     r_render_info_iterator.InitializeByResDic(r_material->material_shader_data->shader_reflection->render_info_dictionary);
+
     RomfsDirectoryParser r_shader_param_iterator = {};
     r_shader_param_iterator.InitializeByResDic(r_material->material_shader_data->shader_reflection->shader_param_dictionary);
+
     RomfsDirectoryParser r_vertex_attribute_iterator = {};
     r_vertex_attribute_iterator.InitializeByArrayNW(r_material->material_shader_data->vertex_attribute_name_array, r_material->material_shader_data->vertex_attribute_count);
+
     RomfsDirectoryParser r_sampler_iterator = {};
-    r_sampler_iterator.InitializeByArrayNW(r_material->material_shader_data->sampler_name_array, r_material->material_shader_data->sampler_count);
+    r_sampler_iterator.InitializeByResDic(r_material->sampler_dictionary);
+
     RomfsDirectoryParser r_static_shader_option_iterator = {};
     r_static_shader_option_iterator.InitializeByResDic(r_material->material_shader_data->shader_reflection->static_shader_option_dictionary);
 
@@ -747,8 +755,8 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
     for (u32 i = 0; i < l_vertex_attribute_iterator.GetFileCount(); ++i) {
         u32 r_index = r_vertex_attribute_iterator.FindPathIndex(l_vertex_attribute_paths[i]);
         if (r_index != RomfsDirectoryParser::InvalidIndex) {
-            const char *l_attr = l_material->GetShaderVertexAttributeName(l_vertex_attribute_paths[i]);
-            const char *r_attr = r_material->GetShaderVertexAttributeName(r_vertex_attribute_paths[r_index]);
+            const char *l_attr = l_material->GetShaderVertexAttributeName(l_vertex_attribute_paths[i]) + 2;
+            const char *r_attr = r_material->GetShaderVertexAttributeName(r_vertex_attribute_paths[r_index]) + 2;
             if (::strcmp(l_attr, r_attr) == 0) { continue; }
             if (is_print == false) { return false; } 
 
@@ -764,11 +772,32 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
         if (r_index != RomfsDirectoryParser::InvalidIndex) {
             const char *l_attr = l_material->GetShaderSamplerName(l_sampler_paths[i]);
             const char *r_attr = r_material->GetShaderSamplerName(r_sampler_paths[r_index]);
-            if (::strcmp(l_attr, r_attr) == 0) { continue; }
+            l_attr = (l_attr != nullptr) ? l_attr + 2 : "\"\"";
+            r_attr = (r_attr != nullptr) ? r_attr + 2 : "\"\"";
+            const char *l_tex = l_material->GetTextureName(l_sampler_paths[i]) + 2;
+            const char *r_tex = r_material->GetTextureName(r_sampler_paths[r_index]) + 2;
+            dd::res::ResGfxSamplerInfo *l_sampler_info = l_material->GetSamplerInfo(l_sampler_paths[i]);
+            dd::res::ResGfxSamplerInfo *r_sampler_info = r_material->GetSamplerInfo(r_sampler_paths[r_index]);
+
+            if (::strcmp(l_attr, r_attr) == 0 && ::strcmp(l_tex, r_tex) == 0 && DiffGfxSamplerInfo(l_sampler_info, r_sampler_info, indent_level, false) == true) { continue; }
             if (is_print == false) { return false; } 
 
             PrintIndent(indent_level + 1);
-            std::cout << "Different(sampler): " << l_sampler_paths[i] << "(left: " << l_attr << ")(right: " << r_attr << ")" << std::endl;
+            std::cout << "Different(sampler): " << l_sampler_paths[i] << std::endl;
+
+            if (::strcmp(l_attr, r_attr) != 0) {
+                PrintIndent(indent_level + 2);
+                std::cout << "shader sampler: (left: " << l_attr << ")(right: " << r_attr << ")" << std::endl;
+            }
+            if (::strcmp(l_tex, r_tex) != 0) {
+                PrintIndent(indent_level + 2);
+                std::cout << "texture: (left: " << l_tex << ".ftex)(right: " << r_tex << ".ftex)" << std::endl;
+            }
+            if (DiffGfxSamplerInfo(l_sampler_info, r_sampler_info, indent_level, false) == false) {
+                PrintIndent(indent_level + 2);
+                std::cout << "sampler info: " << std::endl;
+                DiffGfxSamplerInfo(l_sampler_info, r_sampler_info, indent_level + 3, true);
+            }
         }
     }
     
@@ -823,7 +852,11 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
             std::cout << std::endl;
         }
     }
-    
+
+    const bool user_data_result = DiffGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, false);
+    if (user_data_result == false && is_print == false) { return false; }
+    DiffGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, true);
+
     /* Right only */
     for (u32 i = 0; i < r_render_info_iterator.GetFileCount(); ++i) {
         u32 l_index = l_render_info_iterator.FindPathIndex(r_render_info_paths[i]);
@@ -855,20 +888,32 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
             if (is_print == false) { return false; }
 
             PrintIndent(indent_level + 1);
-            const char *r_attr = r_material->GetShaderVertexAttributeName(r_vertex_attribute_paths[i]);
+            const char *r_attr = r_material->GetShaderVertexAttributeName(r_vertex_attribute_paths[i]) + 2;
             std::cout << "Right only(vertex attribute): " << r_vertex_attribute_paths[i] << "(shader: " << r_attr << ")" << std::endl;
         }
     }
-    
 
     for (u32 i = 0; i < r_sampler_iterator.GetFileCount(); ++i) {
         u32 l_index = l_sampler_iterator.FindPathIndex(r_sampler_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
             if (is_print == false) { return false; }
 
+            const char *m_idx = r_material->GetShaderSamplerName(r_sampler_paths[i]);
+            m_idx = (m_idx != nullptr) ? m_idx + 2 : "\"\"";
+            const char *m_tex = r_material->GetTextureName(r_sampler_paths[i]) + 2;
+            dd::res::ResGfxSamplerInfo *sampler_info = r_material->GetSamplerInfo(r_sampler_paths[i]);
+
             PrintIndent(indent_level + 1);
-            const char *r_attr = r_material->GetShaderSamplerName(r_sampler_paths[i]);
-            std::cout << "Right only(sampler): " << r_sampler_paths[i] << "(shader: " << r_attr << ")" << std::endl;
+            PrintOnlySide(PrintSide::Right);
+            std::cout << "(sampler): " << r_sampler_paths[i] << std::endl;
+
+            PrintIndent(indent_level + 2);
+            std::cout << "shader sampler: " << m_idx << std::endl;
+            PrintIndent(indent_level + 2);
+            std::cout << "texture: " << m_tex << ".ftex" << std::endl;
+            PrintIndent(indent_level + 2);
+            std::cout << "sampler info: " << std::endl;
+            ProcessGfxSamplerInfoSingle(sampler_info, indent_level + 3, PrintSide::Right);
         }
     }
 
@@ -893,77 +938,99 @@ bool DiffBfresMaterial(dd::res::ResBfresMaterial *l_material, dd::res::ResBfresM
                 std::cout << "(static shader option): " << r_static_shader_option_paths[i] << "(String: \"" << string_param << "\")" << std::endl;
             }
         }
-    }    
+    }
+
+    const bool r_user_data_result = RightOnlyGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, false);
+    if (r_user_data_result == false && is_print == false) { return false; }
+    RightOnlyGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, true);
 
     /* Left only */
     for (u32 i = 0; i < l_render_info_iterator.GetFileCount(); ++i) {
         u32 r_index = r_render_info_iterator.FindPathIndex(l_render_info_paths[i]);
-        if (r_index == RomfsDirectoryParser::InvalidIndex) {
-            if (is_print == false) { return false; }
+        if (r_index != RomfsDirectoryParser::InvalidIndex) { continue; }
 
-            PrintIndent(indent_level + 1);
-            std::cout << "Left only (render info): " << l_render_info_paths[i];
-            PrintRenderInfoValue(l_material, l_render_info_paths[i], PrintSide::None);
-            std::cout << std::endl;
-        }
+        if (is_print == false) { return false; }
+
+        PrintIndent(indent_level + 1);
+        std::cout << "Left only (render info): " << l_render_info_paths[i];
+        PrintRenderInfoValue(l_material, l_render_info_paths[i], PrintSide::None);
+        std::cout << std::endl;
     }
 
     for (u32 i = 0; i < l_shader_param_iterator.GetFileCount(); ++i) {
         u32 r_index = r_shader_param_iterator.FindPathIndex(l_shader_param_paths[i]);
-        if (r_index == RomfsDirectoryParser::InvalidIndex) {
-            if (is_print == false) { return false; }
+        if (r_index != RomfsDirectoryParser::InvalidIndex) { continue; }
 
-            PrintIndent(indent_level + 1);
-            std::cout << "Left only (shader param): " << l_shader_param_paths[i];
-            PrintShaderParamValue(l_material, l_shader_param_paths[i], PrintSide::None);
-            std::cout << std::endl;
-        }
+        if (is_print == false) { return false; }
+
+        PrintIndent(indent_level + 1);
+        std::cout << "Left only (shader param): " << l_shader_param_paths[i];
+        PrintShaderParamValue(l_material, l_shader_param_paths[i], PrintSide::None);
+        std::cout << std::endl;
     }
 
     for (u32 i = 0; i < l_vertex_attribute_iterator.GetFileCount(); ++i) {
         u32 r_index = r_vertex_attribute_iterator.FindPathIndex(l_vertex_attribute_paths[i]);
-        if (r_index == RomfsDirectoryParser::InvalidIndex) {
-            if (is_print == false) { return false; }
+        if (r_index != RomfsDirectoryParser::InvalidIndex) { continue; }
 
-            PrintIndent(indent_level + 1);
-            const char *l_attr = l_material->GetShaderVertexAttributeName(l_vertex_attribute_paths[i]);
-            std::cout << "Left only (vertex attribute): " << l_vertex_attribute_paths[i] << "(shader: " << l_attr << ")" << std::endl;
-        }
+        if (is_print == false) { return false; }
+
+        PrintIndent(indent_level + 1);
+        const char *l_attr = l_material->GetShaderVertexAttributeName(l_vertex_attribute_paths[i]) + 2;
+        std::cout << "Left only (vertex attribute): " << l_vertex_attribute_paths[i] << "(shader: " << l_attr << ")" << std::endl;
     }
 
     for (u32 i = 0; i < l_sampler_iterator.GetFileCount(); ++i) {
         u32 r_index = r_sampler_iterator.FindPathIndex(l_sampler_paths[i]);
-        if (r_index == RomfsDirectoryParser::InvalidIndex) {
-            if (is_print == false) { return false; }
+        if (r_index != RomfsDirectoryParser::InvalidIndex) { continue; }
 
-            PrintIndent(indent_level + 1);
-            const char *l_attr = l_material->GetShaderSamplerName(l_sampler_paths[i]);
-            std::cout << "Left only (sampler): " << l_sampler_paths[i] << "(shader: " << l_attr << ")"  << std::endl;
-        }
+        if (is_print == false) { return false; }
+
+        const char *m_idx = l_material->GetShaderSamplerName(l_sampler_paths[i]);
+        m_idx = (m_idx != nullptr) ? m_idx + 2 : "\"\"";
+        const char *m_tex = l_material->GetTextureName(l_sampler_paths[i]) + 2;
+        dd::res::ResGfxSamplerInfo *sampler_info = l_material->GetSamplerInfo(l_sampler_paths[i]);
+
+        PrintIndent(indent_level + 1);
+        PrintOnlySide(PrintSide::Left);
+        std::cout << "(sampler): " << l_sampler_paths[i] << std::endl;
+
+        PrintIndent(indent_level + 2);
+        std::cout << "shader sampler: " << m_idx << std::endl;
+        PrintIndent(indent_level + 2);
+        std::cout << "texture: " << m_tex << ".ftex" << std::endl;
+        PrintIndent(indent_level + 2);
+        std::cout << "sampler info: " << std::endl;
+        ProcessGfxSamplerInfoSingle(sampler_info, indent_level + 3, PrintSide::Left);
     }
     
     for (u32 i = 0; i < l_static_shader_option_iterator.GetFileCount(); ++i) {
         u32 r_index = r_static_shader_option_iterator.FindPathIndex(l_static_shader_option_paths[i]);
-        if (r_index == RomfsDirectoryParser::InvalidIndex) {
-            if (is_print == false) { return false; }
+        if (r_index != RomfsDirectoryParser::InvalidIndex) { continue; }
 
-            const u32 index = l_material->GetStaticShaderOptionIndex(l_static_shader_option_paths[i]);
-            
-            PrintIndent(indent_level + 1);
-            if (index == 0xffff) {
-                PrintOnlySide(PrintSide::Left);
-                std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(Invalid)" << std::endl;
-            } else if (l_material->IsStaticShaderOptionBool(index) == true) {
-                s32 bool_param = l_material->GetStaticShaderOptionBool(index);
-                PrintOnlySide(PrintSide::Left);
-                std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(Bool: " << bool_param << ")" << std::endl;
-            } else {
-                const char *string_param = l_material->GetStaticShaderOptionString(index) + 2;
-                PrintOnlySide(PrintSide::Left);
-                std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(String: \"" << string_param << "\")" << std::endl;
-            }
+        if (is_print == false) { return false; }
+
+        const u32 index = l_material->GetStaticShaderOptionIndex(l_static_shader_option_paths[i]);
+
+        PrintIndent(indent_level + 1);
+        if (index == 0xffff) {
+            PrintOnlySide(PrintSide::Left);
+            std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(Invalid)" << std::endl;
+        } else if (l_material->IsStaticShaderOptionBool(index) == true) {
+            s32 bool_param = l_material->GetStaticShaderOptionBool(index);
+            PrintOnlySide(PrintSide::Left);
+            std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(Bool: " << bool_param << ")" << std::endl;
+        } else {
+            const char *string_param = l_material->GetStaticShaderOptionString(index) + 2;
+            PrintOnlySide(PrintSide::Left);
+            std::cout << "(static shader option): " << l_static_shader_option_paths[i] << "(String: \"" << string_param << "\")" << std::endl;
         }
     }
+    
+    const bool l_user_data_result = LeftOnlyGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, false);
+    if (l_user_data_result == false && is_print == false) { return false; }
+    LeftOnlyGfxUserData(l_material->user_data_array, l_material->user_data_dictionary, r_material->user_data_array, r_material->user_data_dictionary, indent_level + 1, true);
+
 
     /* Cleanup */
     l_render_info_iterator.Finalize();
@@ -986,22 +1053,26 @@ void ProcessResMaterialSingle(dd::res::ResBfresMaterial *material, u32 indent_le
     /* parser */
     RomfsDirectoryParser render_info_iterator = {};
     render_info_iterator.InitializeByResDic(material->material_shader_data->shader_reflection->render_info_dictionary);
+
     RomfsDirectoryParser shader_param_iterator = {};
     shader_param_iterator.InitializeByResDic(material->material_shader_data->shader_reflection->shader_param_dictionary);
+
     RomfsDirectoryParser vertex_attribute_iterator = {};
     vertex_attribute_iterator.InitializeByArrayNW(material->material_shader_data->vertex_attribute_name_array, material->material_shader_data->vertex_attribute_count);
+
     RomfsDirectoryParser sampler_iterator = {};
-    sampler_iterator.InitializeByArrayNW(material->material_shader_data->sampler_name_array, material->material_shader_data->sampler_count);
+    sampler_iterator.InitializeByResDic(material->sampler_dictionary);
+
     RomfsDirectoryParser static_shader_option_iterator = {};
     static_shader_option_iterator.InitializeByResDic(material->material_shader_data->shader_reflection->static_shader_option_dictionary);
 
 
     PrintIndent(indent_level + 1);
-    PrintSideSpace(print_side);
+    PrintOnlySide(print_side);
     std::cout << "(shader archive): " << (material->material_shader_data->shader_reflection->shader_archive_name + 2) << std::endl;
 
     PrintIndent(indent_level + 1);
-    PrintSideSpace(print_side);
+    PrintOnlySide(print_side);
     std::cout << "(shader name): " << (material->material_shader_data->shader_reflection->shader_name + 2) << std::endl;
 
     /* Render info */
@@ -1010,7 +1081,7 @@ void ProcessResMaterialSingle(dd::res::ResBfresMaterial *material, u32 indent_le
         if (material->render_info_value_count_array[material->material_shader_data->shader_reflection->render_info_dictionary->FindEntryIndex(render_info_paths[i])] == 0) { continue; }
 
         PrintIndent(indent_level + 1);
-        PrintSideSpace(print_side);
+        PrintOnlySide(print_side);
         std::cout << "(render info): " << render_info_paths[i];
         PrintRenderInfoValue(material, render_info_paths[i], PrintSide::None);
         std::cout << std::endl;
@@ -1020,7 +1091,7 @@ void ProcessResMaterialSingle(dd::res::ResBfresMaterial *material, u32 indent_le
     char **shader_param_paths = shader_param_iterator.GetFilePathArray();
     for (u32 i = 0; i < shader_param_iterator.GetFileCount(); ++i) {
         PrintIndent(indent_level + 1);
-        PrintSideSpace(print_side);
+        PrintOnlySide(print_side);
         std::cout << "(shader param): " << shader_param_paths[i];
         PrintShaderParamValue(material, shader_param_paths[i], PrintSide::None);
         std::cout << std::endl;
@@ -1029,19 +1100,30 @@ void ProcessResMaterialSingle(dd::res::ResBfresMaterial *material, u32 indent_le
     /* vertex attribute */
     char **vertex_attribute_paths = vertex_attribute_iterator.GetFilePathArray();
     for (u32 i = 0; i < vertex_attribute_iterator.GetFileCount(); ++i) {
-        const char *v_idx = material->GetShaderVertexAttributeName(i);
+        const char *v_idx = material->GetShaderVertexAttributeName(vertex_attribute_paths[i]) + 2;
         PrintIndent(indent_level + 1);
-        PrintSideSpace(print_side);
+        PrintOnlySide(print_side);
         std::cout << "(vertex attribute): " << vertex_attribute_paths[i] << "(shader: "  << v_idx << ")" << std::endl;
     }
 
     /* sampler */
     char **sampler_paths = sampler_iterator.GetFilePathArray();
     for (u32 i = 0; i < sampler_iterator.GetFileCount(); ++i) {
-        const char *m_idx = material->GetShaderSamplerName(i);
+        const char *m_idx = material->GetShaderSamplerName(sampler_paths[i]);
+        m_idx = (m_idx != nullptr) ? m_idx + 2 : "\"\"";
+        const char *m_tex = material->GetTextureName(sampler_paths[i]) + 2;
+        dd::res::ResGfxSamplerInfo *sampler_info = material->GetSamplerInfo(sampler_paths[i]);
         PrintIndent(indent_level + 1);
-        PrintSideSpace(print_side);
-        std::cout << "(sampler): " << sampler_paths[i] << "(shader: " << m_idx << ")" << std::endl;
+        PrintOnlySide(print_side);
+        std::cout << "(sampler): " << sampler_paths[i] << std::endl;
+
+        PrintIndent(indent_level + 2);
+        std::cout << "shader sampler: " << m_idx << std::endl;
+        PrintIndent(indent_level + 2);
+        std::cout << "texture: " << m_tex << ".ftex" << std::endl;
+        PrintIndent(indent_level + 2);
+        std::cout << "sampler info: " << std::endl;
+        ProcessGfxSamplerInfoSingle(sampler_info, indent_level + 3, print_side);
     }
 
     /* static shader option */
@@ -1053,14 +1135,17 @@ void ProcessResMaterialSingle(dd::res::ResBfresMaterial *material, u32 indent_le
         PrintIndent(indent_level + 1);
         if (material->IsStaticShaderOptionBool(index) == true) {
             s32 bool_param = material->GetStaticShaderOptionBool(index);
-            PrintSideSpace(print_side);
+            PrintOnlySide(print_side);
             std::cout << "(static shader option): " << static_shader_option_paths[i] << "(Bool: " << bool_param << ")" << std::endl;
         } else {
             const char *string_param = material->GetStaticShaderOptionString(index) + 2;
-            PrintSideSpace(print_side);
+            PrintOnlySide(print_side);
             std::cout << "(static shader option): " << static_shader_option_paths[i] << "(String: \"" << string_param << "\")" << std::endl;
         }
     }
+
+    /* user data */
+    ProcessGfxUserDataSingle(material->user_data_array, material->user_data_dictionary, indent_level + 1, print_side);
 
     /* cleanup */
     render_info_iterator.Finalize();

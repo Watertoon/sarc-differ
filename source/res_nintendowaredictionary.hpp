@@ -222,7 +222,7 @@ namespace dd::res {
         }
 
         const char *FindKeyByEntryIndex(u32 entry_id) const {
-            return (std::addressof(root_node) + 1)[entry_id].key + 2;
+            return (std::addressof(root_node) + 1)[entry_id].key;
         }
     };
     static_assert(sizeof(ResNintendoWareDictionary) == 0x18);

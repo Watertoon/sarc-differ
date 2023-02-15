@@ -29,7 +29,8 @@ namespace dd::res {
         const char *attribute_name;
         u32         attribute_format;
         u16         buffer_offset;
-        u8          buffer_index;
+        u8          buffer_mask_offset : 6;
+        u8          buffer_flag_offset : 2;
         u8          is_dynamic_vbo;
     };
     static_assert(sizeof(ResBfresVertexAttribute) == 0x10);

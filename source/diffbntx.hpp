@@ -39,31 +39,47 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
             dd::res::ResBntxTextureInfo *r_tex_info = r_bntx->FindTexture(r_paths[r_index]);
 
             /* Check whether textures are different */
+            bool is_same = true;
+            bool user_data_result = DiffGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, 0, false)
+                                 && LeftOnlyGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, 0, false)
+                                 && RightOnlyGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, 0, false);
             if (l_tex_info->texture_info.mip_levels == r_tex_info->texture_info.mip_levels) {
+
                 /* Iterate mips */
-                bool is_same = true;
                 for (u32 y = 0; y < l_tex_info->texture_info.mip_levels; ++y) {
 
                     /* Calculate texture sizes */
                     const u32 l_width  = ((l_tex_info->texture_info.width >> y) != 0)  ? (l_tex_info->texture_info.width >> y)  : 1;
                     const u32 l_height = ((l_tex_info->texture_info.height >> y) != 0) ? (l_tex_info->texture_info.height >> y) : 1;
                     const u32 l_size = dd::res::CalculateGfxImageSize(static_cast<dd::res::GfxChannelFormat>((l_tex_info->texture_info.image_format >> 8) & 0xff), l_width, l_height, l_tex_info->texture_info.depth);
+
                     const u32 r_width  = ((r_tex_info->texture_info.width >> y) != 0)  ? (r_tex_info->texture_info.width >> y)  : 1;
                     const u32 r_height = ((r_tex_info->texture_info.height >> y) != 0) ? (r_tex_info->texture_info.height >> y) : 1;
                     const u32 r_size = dd::res::CalculateGfxImageSize(static_cast<dd::res::GfxChannelFormat>((r_tex_info->texture_info.image_format >> 8) & 0xff), r_width, r_height, r_tex_info->texture_info.depth);
 
-                    /* memcmp */
+                    /* Compare texture data */
                     if (l_size == r_size) {
                         const s32 result = ::memcmp(l_tex_info->mip_offset_table[y], r_tex_info->mip_offset_table[y], l_size);
                         if (result != 0) {is_same = false; break;}
                     } else { is_same = false; break; }
                 }
-                if (is_same == true) { continue; }
+
+                if (user_data_result == true && is_same == true) { continue; }
+            } else {
+                is_same = false;
             }
 
             /* Print diff */
             PrintIndent(indent_level + 1);
-            std::cout <<  "Different(left: 0x"  << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " bytes)(right: 0x"  << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[r_index])->mipmap_total_size << " bytes): " << r_paths[r_index]  << ".ftex" << std::endl;
+            if (is_same == false) {
+                std::cout <<  "Different(left: 0x"  << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " bytes)(right: 0x"  << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[r_index])->mipmap_total_size << " bytes): " << r_paths[r_index]  << ".ftex" << std::endl;
+            } else {
+                std::cout <<  "Different(user data only): " << r_paths[r_index]  << ".ftex" << std::endl;
+            }
+
+            DiffGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, indent_level + 2, true);
+            RightOnlyGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, indent_level + 2, true);
+            LeftOnlyGfxUserData(l_tex_info->user_data_array, l_tex_info->user_data_dictionary, r_tex_info->user_data_array, r_tex_info->user_data_dictionary, indent_level + 2, true);
         }
     }
 
@@ -71,8 +87,11 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
     for (u32 i = 0; i < r_iterator.GetFileCount(); ++i) {
         u32 l_index = l_iterator.FindPathIndex(r_paths[i]);
         if (l_index == RomfsDirectoryParser::InvalidIndex) {
+            dd::res::ResBntxTextureInfo *texture = r_bntx->FindTexture(r_paths[i]);
+
             PrintIndent(indent_level + 1);
-            std::cout <<  "Right only(size: 0x" << std::setfill('0') << std::setw(8) << r_bntx->FindTexture(r_paths[i])->mipmap_total_size << " bytes): " << r_paths[i]  << ".ftex" << std::endl;
+            std::cout <<  "Right only(size: 0x" << std::setfill('0') << std::setw(8) << texture->mipmap_total_size << " bytes): " << r_paths[i]  << ".ftex" << std::endl;
+            ProcessGfxUserDataSingle(texture->user_data_array, texture->user_data_dictionary, indent_level + 2, PrintSide::Right);
         }
     }
 
@@ -80,8 +99,11 @@ void DiffBntx(void *l_file, void *r_file, u32 indent_level) {
     for (u32 i = 0; i < l_iterator.GetFileCount(); ++i) {
         u32 r_index = r_iterator.FindPathIndex(l_paths[i]);
         if (r_index == RomfsDirectoryParser::InvalidIndex) {
+            dd::res::ResBntxTextureInfo *texture = l_bntx->FindTexture(l_paths[i]);
+
             PrintIndent(indent_level + 1);
-            std::cout <<  "Left only (size: 0x" << std::setfill('0') << std::setw(8) << l_bntx->FindTexture(l_paths[i])->mipmap_total_size << " bytes): " << l_paths[i]  << ".ftex" << std::endl;
+            std::cout <<  "Left only (size: 0x" << std::setfill('0') << std::setw(8) << texture->mipmap_total_size << " bytes): " << l_paths[i]  << ".ftex" << std::endl;
+            ProcessGfxUserDataSingle(texture->user_data_array, texture->user_data_dictionary, indent_level + 2, PrintSide::Right);
         }
     }
 
