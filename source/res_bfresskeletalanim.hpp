@@ -17,17 +17,17 @@
 
 namespace dd::res {
 
-    enum BfresBoneAnimCurveType : u16 {
-        BfresBoneAnimCurveType_ScaleX      = (1 << 0),
-        BfresBoneAnimCurveType_ScaleY      = (1 << 1),
-        BfresBoneAnimCurveType_ScaleZ      = (1 << 2),
-        BfresBoneAnimCurveType_RotateX     = (1 << 3),
-        BfresBoneAnimCurveType_RotateY     = (1 << 4),
-        BfresBoneAnimCurveType_RotateZ     = (1 << 5),
-        BfresBoneAnimCurveType_RotateW     = (1 << 6),
-        BfresBoneAnimCurveType_TranslateX  = (1 << 7),
-        BfresBoneAnimCurveType_TranslateY  = (1 << 8),
-        BfresBoneAnimCurveType_TranslateZ  = (1 << 9),
+    enum class BfresBoneAnimCurveType : u16 {
+        ScaleX      = (1 << 0),
+        ScaleY      = (1 << 1),
+        ScaleZ      = (1 << 2),
+        RotateX     = (1 << 3),
+        RotateY     = (1 << 4),
+        RotateZ     = (1 << 5),
+        RotateW     = (1 << 6),
+        TranslateX  = (1 << 7),
+        TranslateY  = (1 << 8),
+        TranslateZ  = (1 << 9),
     };
 
     struct ResBfresBoneAnimResultDefault {

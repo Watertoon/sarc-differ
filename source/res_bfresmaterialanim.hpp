@@ -17,25 +17,47 @@
 
 namespace dd::res {
 
-    struct ResBfresPerMaterialAnim {
-        const char        *model_name;
-        void              *shader_param_anim_array;
-        void              *texture_pattern_anim_array;
-        ResBfresAnimCurve *anim_curve_array;
-        void              *constant_array;
-        u16                base_shader_param_curve_index;
-        u16                base_texture_pattern_curve_index;
-        u16                base_visibility_curve_index;
-        u16                visibility_curve_index;
-        u16                visibility_constant_index;
-        u16                shader_param_anim_count;
-        u16                texture_pattern_anim_count;
-        u16                constant_count;
-        u16                anim_curve_count;
-        u16                reserve0;
-        u32                reserve1;
+    struct ResBfresShaderParamAnim {
+        const char *shader_param_name;
+        u16         base_curve;
+        u16         float_curve_count;
+        u16         int_curve_count;
+        u16         base_constant;
+        u16         constant_count;
+        u16         material_sub_shader_param_index;
+        u32         reserve0;
     };
-    static_assert(sizeof(ResBfresPerMaterialAnim) == 0x40);
+    static_assert(sizeof(ResBfresShaderParamAnim) == 0x18);
+
+    struct ResBfresTexturePatternAnim {
+        const char *texture_name;
+        u16         base_curve;
+        u16         base_constant;
+        u8          material_sub_sampler_index;
+        u8          reserve0;
+        u16         reserve1;
+    };
+    static_assert(sizeof(ResBfresTexturePatternAnim) == 0x10);
+
+    struct ResBfresMaterialAnimData {
+        const char                 *model_name;
+        ResBfresShaderParamAnim    *shader_param_anim_array;
+        ResBfresTexturePatternAnim *texture_pattern_anim_array;
+        ResBfresAnimCurve          *anim_curve_array;
+        void                       *constant_array;
+        u16                         base_shader_param_curve_index;
+        u16                         base_texture_pattern_curve_index;
+        u16                         base_visibility_curve_index;
+        u16                         visibility_curve_index;
+        u16                         visibility_constant_index;
+        u16                         shader_param_anim_count;
+        u16                         texture_pattern_anim_count;
+        u16                         constant_count;
+        u16                         anim_curve_count;
+        u16                         reserve0;
+        u32                         reserve1;
+    };
+    static_assert(sizeof(ResBfresMaterialAnimData) == 0x40);
 
     struct ResBfresMaterialAnim  {
         u32                         magic;
@@ -47,7 +69,7 @@ namespace dd::res {
         const char                 *reserve2;
         ResBfresModel              *user_bound_model;
         u16                        *bind_table;
-        ResBfresPerMaterialAnim    *per_material_anim_array;
+        ResBfresMaterialAnimData   *material_anim_data_array;
         void                      **user_texture_view_array;
         const char                **texture_name_array;
         ResGfxUserData             *user_data_array;
@@ -59,12 +81,22 @@ namespace dd::res {
         u16                         per_material_anim_count;
         u16                         total_anim_curves;
         u16                         shader_param_anim_count;
-        u16                         texutre_pattern_anim_count;
+        u16                         texture_pattern_anim_count;
         u16                         material_visibility_anim_count;
-        u16                         texture_view_count;
+        u16                         texture_count;
         u16                         reserve3;
-        
+
         static constexpr u32 Magic = util::TCharCode32("FMAA");
+
+        //void BindTexture(ResBfres::BindTextureCallback bind_callback, ResBntx *res_bntx) {
+        //    for (u32 i = 0; i < texture_count; ++i) {
+        //        if (user_texture_view_array[i] != nullptr && user_texture_descriptor_slot_array[i] == 0xffff'ffff'ffff'ffff) { continue; }
+        //
+        //        ResBfres::BindTextureReturn ret       = (BindTextureCallback)(texture_name_array[i] + 2, res_bntx);
+        //        user_texture_view_array[i]            = ret->texture_view;
+        //        user_texture_descriptor_slot_array[i] = ret->texture_descriptor_slot;
+        //    }
+        //}
     };
     static_assert(sizeof(ResBfresMaterialAnim) == 0x70);
 }

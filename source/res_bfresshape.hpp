@@ -17,13 +17,13 @@
 
 namespace dd::res {
 
-    struct ResBfresBufferStride {
+    struct ResBfresVertexBufferStride {
         u32 stride;
         u32 divisor;
         u32 reserve0;
         u32 reserve1;
     };
-    static_assert(sizeof(ResBfresBufferStride) == 0x10);
+    static_assert(sizeof(ResBfresVertexBufferStride) == 0x10);
 
     struct ResBfresVertexAttribute {
         const char *attribute_name;
@@ -36,46 +36,46 @@ namespace dd::res {
     static_assert(sizeof(ResBfresVertexAttribute) == 0x10);
 
     struct ResBfresVertex {
-        u32                         magic;
-        u32                         reserve0;
-        ResBfresVertexAttribute    *vertex_attribute_array;
-        ResNintendoWareDictionary  *vertex_attribute_dictionary;
-        void                       *memory_pool;
-        void                       *buffer_array;
-        void                      **buffer_ptr_array;
-        ResGfxBufferInfo           *buffer_info_array;
-        ResBfresBufferStride       *buffer_stride_info_array;
-        void                       *user_pointer;
-        u32                         base_memory_offset;
-        u8                          vertex_attribute_count;
-        u8                          vertex_buffer_count;
-        u16                         section_index;
-        u32                         vertex_count;
-        u16                         reserve1;
-        u16                         vertex_buffer_alignment;
+        u32                          magic;
+        u32                          reserve0;
+        ResBfresVertexAttribute     *vertex_attribute_array;
+        ResNintendoWareDictionary   *vertex_attribute_dictionary;
+        void                        *user_memory_pool_pointer;
+        void                        *user_vertex_buffer_array;
+        void                       **user_vertex_buffer_ptr_array;
+        ResGfxBufferInfo            *vertex_buffer_info_array;
+        ResBfresVertexBufferStride  *vertex_buffer_stride_info_array;
+        void                        *user_pointer;
+        u32                          base_memory_offset;
+        u8                           vertex_attribute_count;
+        u8                           vertex_buffer_count;
+        u16                          section_index;
+        u32                          vertex_count;
+        u16                          reserve1;
+        u16                          vertex_buffer_alignment;
 
         static constexpr u32 Magic = util::TCharCode32("FVTX");
     };
     static_assert(sizeof(ResBfresVertex) == 0x58);
 
     struct ResBfresSubMeshRange {
-        u32 base_index;
+        u32 base_memory_offset;
         u32 index_count;
     };
     static_assert(sizeof(ResBfresSubMeshRange) == 0x8);
 
     struct ResBfresMesh {
-        ResBfresSubMeshRange *sub_mesh_range;
-        void                 *memory_pool;
-        void                 *buffer_array;
-        ResGfxBufferInfo     *buffer_info_array;
+        ResBfresSubMeshRange *sub_mesh_range_array;
+        void                 *user_memory_pool_pointer;
+        void                 *user_index_buffer;
+        ResGfxBufferInfo     *index_buffer_info;
         u32                   index_buffer_memory_offset;
         u32                   primitive_topology;
         u32                   index_format;
-        u32                   indice_count;
-        u32                   base_buffer_index;
+        u32                   index_count;
+        u32                   base_index;
         u16                   sub_mesh_count;
-        u16                   reserve;
+        u16                   reserve0;
     };
     static_assert(sizeof(ResBfresMesh) == 0x38);
 
@@ -98,7 +98,7 @@ namespace dd::res {
         u32                        has_vertex_buffer      : 1;
         u32                        reserve1               : 29;
         const char                *shape_name;
-        ResBfresVertex            *shape_vertex;
+        ResBfresVertex            *vertex;
         ResBfresMesh              *mesh_array;
         u16                       *skin_bone_indice_array;
         ResBfresKeyShape          *key_shape_array;

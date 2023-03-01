@@ -17,30 +17,30 @@
 
 namespace dd::res {
 
-    enum BfresBoneBillboardMode {
-        BfresBoneBillboardMode_None,
-        BfresBoneBillboardMode_Child,
-        BfresBoneBillboardMode_WorldViewVector,
-        BfresBoneBillboardMode_WorldViewPoint,
-        BfresBoneBillboardMode_ScreenViewVector,
-        BfresBoneBillboardMode_ScreenViewPoint,
-        BfresBoneBillboardMode_YAxisViewVector,
-        BfresBoneBillboardMode_YAxisViewPoint,
+    enum class BfresBoneBillboardMode {
+        None,
+        Child,
+        WorldViewVector,
+        WorldViewPoint,
+        ScreenViewVector,
+        ScreenViewPoint,
+        YAxisViewVector,
+        YAxisViewPoint,
     };
-    enum BfresBoneTransformMode : u8 {
-        BfresBoneTransformMode_None                    = (1 << 0),
-        BfresBoneTransformMode_SegmentScaleCompensate  = (1 << 1),
-        BfresBoneTransformMode_ScaleUniform            = (1 << 2),
-        BfresBoneTransformMode_ScaleVolumeOne          = (1 << 3),
-        BfresBoneTransformMode_NoRotation              = (1 << 4),
-        BfresBoneTransformMode_NoTranslation           = (1 << 5),
+    enum class BfresBoneLocalTransformMode : u8 {
+        None                    = (1 << 0),
+        SegmentScaleCompensate  = (1 << 1),
+        ScaleUniform            = (1 << 2),
+        ScaleVolumeOne          = (1 << 3),
+        NoRotation              = (1 << 4),
+        NoTranslation           = (1 << 5),
     };
-    enum BfresBoneHierarchyTransformMode {
-        BfresBoneHierarchyTransformMode_None                    = (1 << 0),
-        BfresBoneHierarchyTransformMode_ScaleUniform            = (1 << 1),
-        BfresBoneHierarchyTransformMode_ScaleVolumeOne          = (1 << 2),
-        BfresBoneHierarchyTransformMode_NoRotation              = (1 << 3),
-        BfresBoneHierarchyTransformMode_NoTranslation           = (1 << 4),
+    enum class BfresBoneHierarchyTransformMode {
+        None                    = (1 << 0),
+        ScaleUniform            = (1 << 1),
+        ScaleVolumeOne          = (1 << 2),
+        NoRotation              = (1 << 3),
+        NoTranslation           = (1 << 4),
     };
 
     struct ResBfresBone {
@@ -54,33 +54,35 @@ namespace dd::res {
         u16                        rigid_bone_index;
         u16                        billboard_index;
         u16                        user_data_count;
-        u32                        reserve1                 : 12;
+        u32                        reserve1                 : 8;
+        u32                        unknown0                 : 4;
         u32                        is_bone_visible          : 1;
-        u32                        reserve2                 : 3;
+        u32                        unknown1                 : 3;
         u32                        billboard_mode           : 3;
-        u32                        reserve3                 : 4;
-        u32                        transform_mode           : 4;
-        u32                        hierarchy_transform_mode : 5;
+        u32                        reserve3                 : 1;
+        u32                        unknown2                 : 3;
+        u32                        local_transform_mode     : 5;
+        u32                        hierarchy_transform_mode : 4;
         util::math::Vector3f       translate;
         util::math::Vector4f       rotate;
         util::math::Vector3f       scale;
     };
     static_assert(sizeof(ResBfresBone) == 0x58);
 
-    enum BfresSkeletonMirrorMode {
-        BfresSkeletonMirrorMode_X,
-        BfresSkeletonMirrorMode_XY,
-        BfresSkeletonMirrorMode_XZ,
+    enum class BfresSkeletonMirrorMode {
+        X,
+        XY,
+        XZ,
     };
-    enum BfresSkeletonScaleMode {
-        BfresSkeletonScaleMode_None,
-        BfresSkeletonScaleMode_Standard,
-        BfresSkeletonScaleMode_Maya,
-        BfresSkeletonScaleMode_SoftImage,
+    enum class BfresSkeletonScaleMode {
+        None,
+        Standard,
+        Maya,
+        SoftImage,
     };
-    enum BfresSkeletonRotationMode {
-        BfresSkeletonRotationMode_Quarternion,
-        BfresSkeletonRotationMode_EulerXYZ,
+    enum class BfresSkeletonRotationMode {
+        Quarternion,
+        EulerXYZ,
     };
 
     struct ResBfresSkeleton {

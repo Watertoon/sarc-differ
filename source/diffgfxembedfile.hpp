@@ -39,8 +39,8 @@ void ProcessGfxUserDataSingle(dd::res::ResGfxUserData *data_array, dd::res::ResN
         PrintOnlySide(print_side);
         std::cout << "(user data): " << (data_array[entry_index].user_data_name + 2);
 
-        switch (data_array[entry_index].data_type) {
-            case dd::res::GfxUserDataType_S32:
+        switch (static_cast<dd::res::GfxUserDataType>(data_array[entry_index].data_type)) {
+            case dd::res::GfxUserDataType::S32:
             {
                 const s32 *user_data = reinterpret_cast<s32*>(data_array[entry_index].user_data);
                 std::cout << "(S32: ";
@@ -53,7 +53,7 @@ void ProcessGfxUserDataSingle(dd::res::ResGfxUserData *data_array, dd::res::ResN
                 std::cout << user_data[(data_array[entry_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Float:
+            case dd::res::GfxUserDataType::Float:
             {
                 const float *user_data = reinterpret_cast<float*>(data_array[entry_index].user_data);
                 std::cout << "(Float: ";
@@ -66,7 +66,7 @@ void ProcessGfxUserDataSingle(dd::res::ResGfxUserData *data_array, dd::res::ResN
                 std::cout << user_data[(data_array[entry_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_String:
+            case dd::res::GfxUserDataType::String:
             {
                 const char **user_data = reinterpret_cast<const char**>(data_array[entry_index].user_data);
                 std::cout << "(String: ";
@@ -79,7 +79,7 @@ void ProcessGfxUserDataSingle(dd::res::ResGfxUserData *data_array, dd::res::ResN
                 std::cout << "\"" << (user_data[(data_array[entry_index].data_entries - 1)] + 2) << "\")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Byte:
+            case dd::res::GfxUserDataType::Byte:
             {
                 const u8 *user_data = reinterpret_cast<u8*>(data_array[entry_index].user_data);
                 std::cout << "(U8: ";
@@ -133,8 +133,8 @@ bool LeftOnlyGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNint
         PrintOnlySide(PrintSide::Left);
         std::cout << "(user data): " << (l_data_array[l_index].user_data_name + 2);
 
-        switch (l_data_array[l_index].data_type) {
-            case dd::res::GfxUserDataType_S32:
+        switch (static_cast<dd::res::GfxUserDataType>(l_data_array[l_index].data_type)) {
+            case dd::res::GfxUserDataType::S32:
             {
                 const s32 *user_data = reinterpret_cast<s32*>(l_data_array[l_index].user_data);
                 std::cout << "(S32: ";
@@ -147,7 +147,7 @@ bool LeftOnlyGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNint
                 std::cout << user_data[(l_data_array[l_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Float:
+            case dd::res::GfxUserDataType::Float:
             {
                 const float *user_data = reinterpret_cast<float*>(l_data_array[l_index].user_data);
                 std::cout << "(Float: ";
@@ -160,7 +160,7 @@ bool LeftOnlyGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNint
                 std::cout << user_data[(l_data_array[l_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_String:
+            case dd::res::GfxUserDataType::String:
             {
                 const char **user_data = reinterpret_cast<const char**>(l_data_array[l_index].user_data);
                 std::cout << "(String: ";
@@ -173,7 +173,7 @@ bool LeftOnlyGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNint
                 std::cout << "\"" << (user_data[(l_data_array[l_index].data_entries - 1)] + 2) << "\")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Byte:
+            case dd::res::GfxUserDataType::Byte:
             {
                 const u8 *user_data = reinterpret_cast<u8*>(l_data_array[l_index].user_data);
                 std::cout << "(U8: ";
@@ -229,8 +229,8 @@ bool RightOnlyGfxUserData([[maybe_unused]] dd::res::ResGfxUserData *l_data_array
         PrintOnlySide(PrintSide::Right);
         std::cout << "(user data): " << (r_data_array[r_index].user_data_name + 2);
 
-        switch (r_data_array[r_index].data_type) {
-            case dd::res::GfxUserDataType_S32:
+        switch (static_cast<dd::res::GfxUserDataType>(r_data_array[r_index].data_type)) {
+            case dd::res::GfxUserDataType::S32:
             {
                 const s32 *user_data = reinterpret_cast<s32*>(r_data_array[r_index].user_data);
                 std::cout << "(S32: ";
@@ -243,7 +243,7 @@ bool RightOnlyGfxUserData([[maybe_unused]] dd::res::ResGfxUserData *l_data_array
                 std::cout << user_data[(r_data_array[r_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Float:
+            case dd::res::GfxUserDataType::Float:
             {
                 const float *user_data = reinterpret_cast<float*>(r_data_array[r_index].user_data);
                 std::cout << "(Float: ";
@@ -256,7 +256,7 @@ bool RightOnlyGfxUserData([[maybe_unused]] dd::res::ResGfxUserData *l_data_array
                 std::cout << user_data[(r_data_array[r_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_String:
+            case dd::res::GfxUserDataType::String:
             {
                 const char **user_data = reinterpret_cast<const char**>(r_data_array[r_index].user_data);
                 std::cout << "(String: ";
@@ -269,7 +269,7 @@ bool RightOnlyGfxUserData([[maybe_unused]] dd::res::ResGfxUserData *l_data_array
                 std::cout << "\"" << (user_data[(r_data_array[r_index].data_entries - 1)] + 2) << "\")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Byte:
+            case dd::res::GfxUserDataType::Byte:
             {
                 const u8 *user_data = reinterpret_cast<u8*>(r_data_array[r_index].user_data);
                 std::cout << "(U8: ";
@@ -321,8 +321,8 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
 
         /* Comparison switch */
         if (l_data_array[l_index].data_type == r_data_array[r_index].data_type && l_data_array[l_index].data_entries == r_data_array[r_index].data_entries) {
-            switch (l_data_array[l_index].data_type) {
-                case dd::res::GfxUserDataType_S32:
+            switch (static_cast<dd::res::GfxUserDataType>(l_data_array[l_index].data_type)) {
+                case dd::res::GfxUserDataType::S32:
                 {
                     const s32 *l_user_data = reinterpret_cast<s32*>(l_data_array[l_index].user_data);
                     const s32 *r_user_data = reinterpret_cast<s32*>(r_data_array[r_index].user_data);
@@ -332,7 +332,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                     }
                     continue;
                 }
-                case dd::res::GfxUserDataType_Float:
+                case dd::res::GfxUserDataType::Float:
                 {
                     const float *l_user_data = reinterpret_cast<float*>(l_data_array[l_index].user_data);
                     const float *r_user_data = reinterpret_cast<float*>(r_data_array[r_index].user_data);
@@ -342,7 +342,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                     }
                     continue;
                 }
-                case dd::res::GfxUserDataType_String:
+                case dd::res::GfxUserDataType::String:
                 {
                     const char **l_user_data = reinterpret_cast<const char**>(l_data_array[l_index].user_data);
                     const char **r_user_data = reinterpret_cast<const char**>(r_data_array[r_index].user_data);
@@ -352,7 +352,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                     }
                     continue;
                 }
-                case dd::res::GfxUserDataType_Byte:
+                case dd::res::GfxUserDataType::Byte:
                 {
                     const u8 *l_user_data = reinterpret_cast<u8*>(l_data_array[l_index].user_data);
                     const u8 *r_user_data = reinterpret_cast<u8*>(r_data_array[r_index].user_data);
@@ -371,8 +371,8 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
         std::cout << "Different(user data): " << (l_data_array[l_index].user_data_name + 2);
 
         /* Print left */
-        switch (l_data_array[l_index].data_type) {
-            case dd::res::GfxUserDataType_S32:
+        switch (static_cast<dd::res::GfxUserDataType>(l_data_array[l_index].data_type)) {
+            case dd::res::GfxUserDataType::S32:
             {
                 const s32 *user_data = reinterpret_cast<s32*>(l_data_array[l_index].user_data);
                 std::cout << "(left S32: ";
@@ -385,7 +385,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << user_data[(l_data_array[l_index].data_entries - 1)] << ")";
                 break;
             }
-            case dd::res::GfxUserDataType_Float:
+            case dd::res::GfxUserDataType::Float:
             {
                 const float *user_data = reinterpret_cast<float*>(l_data_array[l_index].user_data);
                 std::cout << "(left Float: ";
@@ -398,7 +398,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << user_data[(l_data_array[l_index].data_entries - 1)] << ")";
                 break;
             }
-            case dd::res::GfxUserDataType_String:
+            case dd::res::GfxUserDataType::String:
             {
                 const char **user_data = reinterpret_cast<const char**>(l_data_array[l_index].user_data);
                 std::cout << "(left String: ";
@@ -411,7 +411,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << "\"" << (user_data[(l_data_array[l_index].data_entries - 1)] + 2) << "\")";
                 break;
             }
-            case dd::res::GfxUserDataType_Byte:
+            case dd::res::GfxUserDataType::Byte:
             {
                 const u8 *user_data = reinterpret_cast<u8*>(l_data_array[l_index].user_data);
                 std::cout << "(left U8: ";
@@ -430,8 +430,8 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
         }
 
         /* Print right */
-        switch (r_data_array[r_index].data_type) {
-            case dd::res::GfxUserDataType_S32:
+        switch (static_cast<dd::res::GfxUserDataType>(r_data_array[r_index].data_type)) {
+            case dd::res::GfxUserDataType::S32:
             {
                 const s32 *user_data = reinterpret_cast<s32*>(r_data_array[r_index].user_data);
                 std::cout << "(right S32: ";
@@ -444,7 +444,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << user_data[(r_data_array[r_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Float:
+            case dd::res::GfxUserDataType::Float:
             {
                 const float *user_data = reinterpret_cast<float*>(r_data_array[r_index].user_data);
                 std::cout << "(right Float: ";
@@ -457,7 +457,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << user_data[(r_data_array[r_index].data_entries - 1)] << ")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_String:
+            case dd::res::GfxUserDataType::String:
             {
                 const char **user_data = reinterpret_cast<const char**>(r_data_array[r_index].user_data);
                 std::cout << "(right String: ";
@@ -470,7 +470,7 @@ bool DiffGfxUserData(dd::res::ResGfxUserData *l_data_array, dd::res::ResNintendo
                 std::cout << "\"" << (user_data[(r_data_array[r_index].data_entries - 1)] + 2) << "\")" << std::endl;
                 break;
             }
-            case dd::res::GfxUserDataType_Byte:
+            case dd::res::GfxUserDataType::Byte:
             {
                 const u8 *user_data = reinterpret_cast<u8*>(r_data_array[r_index].user_data);
                 std::cout << "(right U8: ";

@@ -168,8 +168,8 @@ namespace dd::res {
         ResNintendoWareDictionary   *user_data_dictionary;
         u32                         *shader_param_convert_flags_array;
         void                        *user_pointer;
-        u64                         *sampler_descriptor_slot_array;
-        u64                         *texture_descriptor_slot_array;
+        u64                         *user_sampler_descriptor_slot_array;
+        u64                         *user_texture_descriptor_slot_array;
         u16                          section_index;
         u8                           sampler_count;
         u8                           texture_count;
@@ -178,6 +178,18 @@ namespace dd::res {
         u16                          unknown_size;
         u16                          user_shading_model_option_ubo_size;
         u32                          reserve2;
+
+        static constexpr u32 Magic = util::TCharCode32("FMAT");
+
+        //void BindTexture(ResBfres::BindTextureCallback bind_callback, ResBntx *res_bntx) {
+        //    for (u32 i = 0; i < sampler_count; ++i) {
+        //        if (user_texture_view_array[i] != nullptr && user_texture_descriptor_slot_array[i] == 0xffff'ffff'ffff'ffff) { continue; }
+        //
+        //        ResBfres::BindTextureReturn ret       = (BindTextureCallback)(texture_name_array[i] + 2, res_bntx);
+        //        user_texture_view_array[i]            = ret->texture_view;
+        //        user_texture_descriptor_slot_array[i] = ret->texture_descriptor_slot;
+        //    }
+        //}
 
         ALWAYS_INLINE u32 GetStaticShaderOptionIndex(const char *option_name) {
             const u32 dic_index = material_shader_data->shader_reflection->static_shader_option_dictionary->FindEntryIndex(option_name);
@@ -223,8 +235,6 @@ namespace dd::res {
             const u32 entry_index = sampler_dictionary->FindEntryIndex(sampler_name);
             return (entry_index != 0xffff'ffff) ? std::addressof(sampler_info_array[entry_index]) : nullptr;
         }
-
-        static constexpr u32 Magic = util::TCharCode32("FMAT");
     };
     static_assert(sizeof(ResBfresMaterial) == 0xb0);
 }

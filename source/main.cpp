@@ -18,6 +18,7 @@
 #include <bit>
 #include <array>
 #include <cstring>
+#include <cstdarg>
 #include <iostream>
 
 void _consteval_fail();
@@ -57,6 +58,7 @@ typedef short s16;
 typedef unsigned char u8;
 typedef signed char s8;
 #define ALWAYS_INLINE __attribute__((always_inline)) inline 
+#define NO_INLINE __attribute__((noinline))
 
 enum class PrintSide : u32 {
     None  = 0,
@@ -86,6 +88,12 @@ enum class PrintSide : u32 {
 #include "res_szs.hpp"
 #include "res_bea.hpp"
 #include "util_alignment.hpp"
+#include "util_bufferstring.hpp"
+#include "util_pathutil.hpp"
+#include "res_byaml.hpp"
+#include "res_byamlstringtableiterator.hpp"
+#include "res_byamldictionaryiterator.hpp"
+#include "res_byamliterator.hpp"
 
 #include "directoryparser.hpp"
 
@@ -148,9 +156,12 @@ void PrintSideSpace(PrintSide print_side) {
 #include "diffgfxembedfile.hpp"
 #include "diffbntx.hpp"
 #include "diffbfresmaterial.hpp"
+#include "diffbfresshape.hpp"
 #include "diffbfresmodel.hpp"
 #include "diffbfres.hpp"
 #include "diffbea.hpp"
+#include "diffbyaml.hpp"
+#include "diffbyamltypes.hpp"
 
 bool ProcessFileByWin32(const char *left_dir, const char *right_dir, const char *left_file_path, const char *right_file_path) {
 
@@ -284,26 +295,29 @@ enum FileType {
     FileType_Bntx    = 3,
     FileType_Bars    = 4,
     FileType_Bea     = 5,
+    FileType_Byaml   = 6,
 };
 
-FileType GetFileTypeSingle(void *file) {
+FileType GetFileTypeSingle(void *file, u32 file_size) {
     dd::res::SarcExtractor sarc_test = {};
-    if (sarc_test.Initialize(file) == true) {
+    if (sizeof(dd::res::ResSarc) <= file_size && sarc_test.Initialize(file) == true) {
         return FileType_Sarc;
-    } else if (reinterpret_cast<dd::res::ResBars*>(file)->IsValid() == true) {
+    } else if (sizeof(dd::res::ResBars) <= file_size && reinterpret_cast<dd::res::ResBars*>(file)->IsValid() == true) {
         return FileType_Bars;
-    } else if (dd::res::ResBntx::IsValid(file) == true) {
+    } else if (sizeof(dd::res::ResBntx) <= file_size && dd::res::ResBntx::IsValid(file) == true) {
         return FileType_Bntx;
-    } else if (dd::res::ResBfres::IsValid(file) == true) {
+    } else if (sizeof(dd::res::ResBfres) <= file_size && dd::res::ResBfres::IsValid(file) == true) {
         return FileType_Bfres;
-    } else if (dd::res::ResBea::IsValid(file) == true) {
+    } else if (sizeof(dd::res::ResBea) <= file_size && dd::res::ResBea::IsValid(file) == true) {
         return FileType_Bea;
+    } else if (sizeof(dd::res::ResByaml) <= file_size && dd::res::ResByaml::IsValid(file) == true) {
+        return FileType_Byaml;
     }
     return FileType_Invalid;
 }
-FileType GetFileType(void *left, void *right) {
-    FileType l_type = GetFileTypeSingle(left);
-    FileType r_type = GetFileTypeSingle(right);
+FileType GetFileType(void *left, void *right, u32 left_size, u32 right_size) {
+    FileType l_type = GetFileTypeSingle(left, left_size);
+    FileType r_type = GetFileTypeSingle(right, right_size);
     return (l_type == r_type) ? l_type : FileType_Invalid;
 }
 
@@ -325,10 +339,7 @@ void ProcessSingleImpl(void *file, size_t size, const char *file_path, u32 inden
     std::cout << "(size: 0x" << std::setfill('0') << std::setw(8) << full_size << "): " << file_path << std::endl;
 
     /* Check archive type */
-    FileType type = FileType_Invalid;
-    if (0x20 <= full_size) {
-        type = GetFileTypeSingle(full);
-    }
+    FileType type = GetFileTypeSingle(full, full_size);
     switch (type) {
         case FileType_Sarc:
             ProcessSarcSingle(full, indent_level + 1, print_side);
@@ -382,10 +393,7 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
     std::cout << std::hex << "Different(left: 0x" << std::setfill('0') << std::setw(8) << left_full_size << " bytes)(right: 0x" << std::setfill('0') << std::setw(8) << right_full_size << " bytes): " << right_path << std::endl;
 
     /* Pass off to specific diff function */
-    FileType type = FileType_Invalid;
-    if (0x20 <= left_full_size && 0x20 <= right_full_size) {
-        type = GetFileType(left_full, right_full);
-    }
+    FileType type = GetFileType(left_full, right_full, left_full_size, right_full_size);
     switch (type) {
         case FileType_Sarc:
             DiffSarc(left_full, right_full, indent_level);
@@ -402,6 +410,35 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
         case FileType_Bea:
             DiffBea(left_full, right_full, indent_level);
             break;
+        case FileType_Byaml:
+        {
+            dd::util::FixedString<dd::util::MaxPath> extension;
+            dd::util::FixedString<dd::util::MaxPath> file_name;
+            dd::util::GetExtensionFromPath(std::addressof(extension), right_path);
+            dd::util::GetFileNameFromPathNoExtension(std::addressof(file_name), right_path);
+            switch(GetByamlFileTypeByExtension(std::addressof(extension))) {
+                case ByamlFileType::Bgyml:
+                    DiffBgyml(left_full, right_full, indent_level, true);
+                    break;
+                case ByamlFileType::AiDefn:
+                    //DiffAiDefn(left_full, right_full, indent_level);
+                    break;
+                case ByamlFileType::Rstbl:
+                    DiffRstbl(std::addressof(file_name), left_full, right_full, indent_level, true);
+                    break;
+                case ByamlFileType::Esetb:
+                    //DiffEsetb(left_full, right_full, indent_level);
+                    break;
+                case ByamlFileType::Bcett:
+                    DiffBcett(left_full, right_full, indent_level, true);
+                    break;
+                case ByamlFileType::Generic:
+                default:
+                    DiffGenericByamlByFileName(std::addressof(file_name), left_full, right_full, indent_level, true);
+                    break;
+            }
+            break;
+        }
         default:
             break;
     }
@@ -474,8 +511,12 @@ int main(int argc, char **argv) {
     /* Directory iteration */
     RomfsDirectoryParser left_iterator = {};
     RomfsDirectoryParser right_iterator = {};
-    left_iterator.Initialize(argv[1]);
-    right_iterator.Initialize(argv[2]);
+    const bool l_result = left_iterator.Initialize(argv[1]);
+    const bool r_result = right_iterator.Initialize(argv[2]);
+    if (l_result == false || r_result == false) {
+        std::cout << "options(required): [left romfs dir] [right romfs dir]" << std::endl;
+        return 1;
+    }
 
     /* Compare files in both paths */
     char **left_paths = left_iterator.GetFilePathArray();

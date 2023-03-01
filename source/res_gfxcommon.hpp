@@ -17,7 +17,7 @@
 
 namespace dd::res {
 
-    enum class GfxGpuAccessFlags : u32 {
+    enum class GfxMemoryPoolFlags : u32 {
         CpuNoAccess  = (1 << 0),
         CpuUncached  = (1 << 1),
         CpuCached    = (1 << 2),
@@ -29,9 +29,23 @@ namespace dd::res {
         Physical     = (1 << 8),
         Virtual      = (1 << 9),
     };
+    
+    enum class GfxGpuAccessFlags : u32 {
+        
+        VertexBuffer        = (1 << 2),
+        IndexBuffer         = (1 << 3),
+        UniformBuffer       = (1 << 4),
+        Texture             = (1 << 5),
+        TransferDestination = (1 << 6),
+        RenderTargetColor   = (1 << 7),
+        RenderTargetDepth   = (1 << 8),
+        IndirectDraw        = (1 << 9),
+        DisplayTexture      = (1 << 10),
+        Counter             = (1 << 11),
+    };
 
     struct ResGfxMemoryPoolInfo {
-        u32   gpu_access_flags;
+        u32   memory_pool_flags;
         u32   size;
         void *storage;
     };
@@ -55,7 +69,7 @@ namespace dd::res {
     };
 
     enum class GfxChannelFormat : u8 {
-        None         = 0x0,
+        None         = 0x1,
         R8           = 0x2,
         R4G4B4A4     = 0x3,
         R5G5B5A1     = 0x5,
@@ -170,14 +184,16 @@ namespace dd::res {
     }
 
     enum class GfxTypeFormat : u8 {
-        Unorm = 1,
-        Snorm = 2,
-        UInt  = 3,
-        SInt  = 4,
-        Float = 5,
-        SRGB  = 6,
-        Depth = 7, /* (Unorm) */
-        UFloat = 0xa
+        Unorm   = 1,
+        Snorm   = 2,
+        UInt    = 3,
+        SInt    = 4,
+        Float   = 5,
+        SRGB    = 6,
+        Depth   = 7, /* (Unorm) */
+        UScaled = 8,
+        SScaled = 9,
+        UFloat  = 0xa
     };
 
     #define GFX_MAKE_IMAGE_FORMAT(channel_format, type_format) \
@@ -248,7 +264,7 @@ namespace dd::res {
         BC4_Unorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC4,          GfxTypeFormat::Unorm),
         BC4_Snorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC4,          GfxTypeFormat::Snorm),
         BC5_Unorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC5,          GfxTypeFormat::Unorm),
-        BC5_Snorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC5,          GfxTypeFormat::Unorm),
+        BC5_Snorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC5,          GfxTypeFormat::Snorm),
         BC6H_SF16             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC6H,         GfxTypeFormat::Float),
         BC6H_UF16             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC6H,         GfxTypeFormat::UFloat),
         BC7U_Unorm            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::BC7U,         GfxTypeFormat::Unorm),
@@ -285,7 +301,62 @@ namespace dd::res {
     };
 
     enum class GfxAttributeFormat : u32 {
-        
+        None_Unorm           = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::None,         GfxTypeFormat::Unorm),
+        R8_Unorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::Unorm),
+        R8_Snorm             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::Snorm),
+        R8_UInt              = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::UInt),
+        R8_SInt              = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::SInt),
+        R8_UScaled           = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::UScaled),
+        R8_SScaled           = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8,           GfxTypeFormat::SScaled),
+        R8G8_Unorm           = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::Unorm),
+        R8G8_Snorm           = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::Snorm),
+        R8G8_UInt            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::UInt),
+        R8G8_SInt            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::SInt),
+        R8G8_UScaled         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::UScaled),
+        R8G8_SScaled         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8,         GfxTypeFormat::SScaled),
+        R16_Unorm            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::Unorm),
+        R16_Snorm            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::Snorm),
+        R16_UInt             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::UInt),
+        R16_SInt             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::SInt),
+        R16_Float            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::Float),
+        R16_UScaled          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::UScaled),
+        R16_SScaled          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16,          GfxTypeFormat::SScaled),
+        R8G8B8A8_Unorm       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::Unorm),
+        R8G8B8A8_Snorm       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::Snorm),
+        R8G8B8A8_UInt        = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::UInt),
+        R8G8B8A8_SInt        = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::SInt),
+        R8G8B8A8_UScaled     = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::UScaled),
+        R8G8B8A8_SScaled     = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R8G8B8A8,     GfxTypeFormat::SScaled),
+        R10G10B10A2_Unorm    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R10G10B10A2,  GfxTypeFormat::Unorm),
+        R10G10B10A2_Snorm    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R10G10B10A2,  GfxTypeFormat::Snorm),
+        R10G10B10A2_UInt     = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R10G10B10A2,  GfxTypeFormat::UInt),
+        R10G10B10A2_SInt     = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R10G10B10A2,  GfxTypeFormat::SInt),
+        R16G16_Unorm         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::Unorm),
+        R16G16_Snorm         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::Snorm),
+        R16G16_UInt          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::UInt),
+        R16G16_SInt          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::SInt),
+        R16G16_Float         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::Float),
+        R16G16_UScaled       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::UScaled),
+        R16G16_SScaled       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16,        GfxTypeFormat::SScaled),
+        R32_UInt             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32,           GfxTypeFormat::UInt),
+        R32_SInt             = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32,           GfxTypeFormat::SInt),
+        R32_Float            = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32,           GfxTypeFormat::Float),
+        R16G16B16A16_Unorm   = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::Unorm),
+        R16G16B16A16_Snorm   = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::Snorm),
+        R16G16B16A16_UInt    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::UInt),
+        R16G16B16A16_SInt    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::SInt),
+        R16G16B16A16_Float   = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::Float),
+        R16G16B16A16_UScaled = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::UScaled),
+        R16G16B16A16_SScaled = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R16G16B16A16,  GfxTypeFormat::SScaled),
+        R32G32_UInt          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32,        GfxTypeFormat::UInt),
+        R32G32_SInt          = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32,        GfxTypeFormat::SInt),
+        R32G32_Float         = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32,        GfxTypeFormat::Float),
+        R32G32B32_UInt       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32,     GfxTypeFormat::UInt),
+        R32G32B32_SInt       = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32,     GfxTypeFormat::SInt),
+        R32G32B32_Float      = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32,     GfxTypeFormat::Float),
+        R32G32B32A32_UInt    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32A32,  GfxTypeFormat::UInt),
+        R32G32B32A32_SInt    = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32A32,  GfxTypeFormat::SInt),
+        R32G32B32A32_Float   = GFX_MAKE_IMAGE_FORMAT(GfxChannelFormat::R32G32B32A32,  GfxTypeFormat::Float),
     };
 
     enum class GfxImageStorageDimension : u8 { 
@@ -309,7 +380,7 @@ namespace dd::res {
     struct ResGfxTextureInfo {
         u8  is_packaged         : 1;
         u8  is_sparse_binding   : 1;
-        u8  is_sparse_residency : 1;
+        u8  is_sparse           : 1;
         u8  is_res_texture      : 1;
         u8  reserve0            : 4;
         u8  storage_dimension;
@@ -319,7 +390,7 @@ namespace dd::res {
         u16 sample_count;
         u16 reserve1;
         u32 image_format;
-        u32 gpu_access_flag;
+        u32 gpu_access_flags;
         u32 width;
         u32 height;
         u32 depth;
@@ -400,23 +471,29 @@ namespace dd::res {
     };
     static_assert(sizeof(ResGfxSamplerInfo) == 0x20);
 
-    enum GfxPrimitiveTopology {
-        GfxPrimitiveTopology_Points,
-        GfxPrimitiveTopology_Lines,
-        GfxPrimitiveTopology_LineStrip,
-        GfxPrimitiveTopology_Triangles,
-        GfxPrimitiveTopology_TrianglesStrip,
-        GfxPrimitiveTopology_LinesAdjacency,
-        GfxPrimitiveTopology_LineStripAdjacency,
-        GfxPrimitiveTopology_TrianglesAdjacency,
-        GfxPrimitiveTopology_TriangleStripAdjacency,
-        GfxPrimitiveTopology_Patches,
+    enum class GfxPrimitiveTopology {
+        Points                 = 0,
+        Lines                  = 1,
+        LineStrip              = 2,
+        Triangles              = 3,
+        TrianglesStrip         = 4,
+        LinesAdjacency         = 5,
+        LineStripAdjacency     = 6,
+        TrianglesAdjacency     = 7,
+        TriangleStripAdjacency = 8,
+        Patches                = 9,
     };
 
-    enum GfxPolygonMode {
-        GfxPolygonMode_Point,
-        GfxPolygonMode_Fill,
-        GfxPolygonMode_Line
+    enum class GfxPolygonMode {
+        Point = 0,
+        Fill  = 1,
+        Line  = 2
+    };
+
+    enum class GfxIndexFormat {
+        U8  = 0,
+        U16 = 1,
+        U32 = 2
     };
 
     struct ResGfxEmbedFile {
@@ -426,11 +503,11 @@ namespace dd::res {
     };
     static_assert(sizeof(ResGfxEmbedFile) == 0x10);
 
-    enum GfxUserDataType : u8 {
-        GfxUserDataType_S32    = 0,
-        GfxUserDataType_Float  = 1,
-        GfxUserDataType_String = 2,
-        GfxUserDataType_Byte   = 3
+    enum class GfxUserDataType : u8 {
+        S32    = 0,
+        Float  = 1,
+        String = 2,
+        Byte   = 3
     };
 
     struct ResGfxUserData {
@@ -544,6 +621,368 @@ namespace dd::res {
                 return "TransparentBlack";
             case GfxBorderColor::Black:
                 return "Black";
+            default:
+                break;
+        }
+        return "Invalid";
+    }
+
+    constexpr ALWAYS_INLINE const char *GfxPrimitiveTopologyToString(GfxPrimitiveTopology primitive_topology) {
+        switch (primitive_topology) {
+            case GfxPrimitiveTopology::Points:
+                return "Points";
+            case GfxPrimitiveTopology::Lines:
+                return "Lines";
+            case GfxPrimitiveTopology::LineStrip:
+                return "LineStrip";
+            case GfxPrimitiveTopology::Triangles:
+                return "Triangles";
+            case GfxPrimitiveTopology::TrianglesStrip:
+                return "TrianglesStrip";
+            case GfxPrimitiveTopology::LinesAdjacency:
+                return "LinesAdjacency";
+            case GfxPrimitiveTopology::LineStripAdjacency:
+                return "LineStripAdjacency";
+            case GfxPrimitiveTopology::TrianglesAdjacency:
+                return "TrianglesAdjacency";
+            case GfxPrimitiveTopology::TriangleStripAdjacency:
+                return "TriangleStripAdjacency";
+            case GfxPrimitiveTopology::Patches:
+                return "Patches";
+            default:
+                break;
+        }
+        return "Invalid";
+    }
+
+    constexpr ALWAYS_INLINE const char *GfxIndexFormatToString(GfxIndexFormat index_format) {
+        switch (index_format) {
+            case GfxIndexFormat::U8:
+                return "U8";
+            case GfxIndexFormat::U16:
+                return "U16";
+            case GfxIndexFormat::U32:
+                return "U32";
+            default:
+                break;
+        }
+        return "Invalid";
+    }
+
+    constexpr ALWAYS_INLINE const char *GfxImageFormatToString(GfxImageFormat image_format) {
+        switch (image_format) {
+            case GfxImageFormat::R8_Unorm:
+                return "R8_Unorm";
+            case GfxImageFormat::R8_Snorm:
+                return "R8_Snorm";
+            case GfxImageFormat::R8_UInt:
+                return "R8_UInt";
+            case GfxImageFormat::R8_SInt:
+                return "R8_SInt";
+            case GfxImageFormat::R4G4B4A4_Unorm:
+                return "R4G4B4A4_Unorm";
+            case GfxImageFormat::R5G5B5A1_Unorm:
+                return "R5G5B5A1_Unorm";
+            case GfxImageFormat::A1B5G5R5_Unorm:
+                return "A1B5G5R5_Unorm";
+            case GfxImageFormat::R5G6B5_Unorm:
+                return "R5G6B5_Unorm";
+            case GfxImageFormat::B5G6R5_Unorm:
+                return "B5G6R5_Unorm";
+            case GfxImageFormat::R8G8_Unorm:
+                return "R8G8_Unorm";
+            case GfxImageFormat::R8G8_Snorm:
+                return "R8G8_Snorm";
+            case GfxImageFormat::R8G8_UInt:
+                return "R8G8_UInt";
+            case GfxImageFormat::R8G8_SInt:
+                return "R8G8_SInt";
+            case GfxImageFormat::R16_Unorm:
+                return "R16_Unorm";
+            case GfxImageFormat::R16_Snorm:
+                return "R16_Snorm";
+            case GfxImageFormat::R16_UInt:
+                return "R16_UInt";
+            case GfxImageFormat::R16_SInt:
+                return "R16_SInt";
+            case GfxImageFormat::R16_Float:
+                return "R16_Float";
+            case GfxImageFormat::Z16_Depth:
+                return "Z16_Depth";
+            case GfxImageFormat::R8G8B8A8_Unorm:
+                return "R8G8B8A8_Unorm";
+            case GfxImageFormat::R8G8B8A8_Snorm:
+                return "R8G8B8A8_Snorm";
+            case GfxImageFormat::R8G8B8A8_UInt:
+                return "R8G8B8A8_UInt";
+            case GfxImageFormat::R8G8B8A8_SInt:
+                return "R8G8B8A8_SInt";
+            case GfxImageFormat::R8G8B8A8_SRGB:
+                return "R8G8B8A8_SRGB";
+            case GfxImageFormat::B8G8R8A8_Unorm:
+                return "B8G8R8A8_Unorm";
+            case GfxImageFormat::B8G8R8A8_SRGB:
+                return "B8G8R8A8_SRGB";
+            case GfxImageFormat::R9G9B9E5F_SharedFloat:
+                return "R9G9B9E5F_SharedFloat";
+            case GfxImageFormat::R10G10B10A2_Unorm:
+                return "R10G10B10A2_Unorm";
+            case GfxImageFormat::R10G10B10A2_UInt:
+                return "R10G10B10A2_UInt";
+            case GfxImageFormat::R11G11B10F_Float:
+                return "R11G11B10F_Float";
+            case GfxImageFormat::R16G16_Unorm:
+                return "R16G16_Unorm";
+            case GfxImageFormat::R16G16_Snorm:
+                return "R16G16_Snorm";
+            case GfxImageFormat::R16G16_UInt:
+                return "R16G16_UInt";
+            case GfxImageFormat::R16G16_SInt:
+                return "R16G16_SInt";
+            case GfxImageFormat::R16G16_Float:
+                return "R16G16_Float";
+            case GfxImageFormat::D24S8_Depth:
+                return "D24S8_Depth";
+            case GfxImageFormat::R32_UInt:
+                return "R32_UInt";
+            case GfxImageFormat::R32_SInt:
+                return "R32_SInt";
+            case GfxImageFormat::R32_Float:
+                return "R32_Float";
+            case GfxImageFormat::D32F_Depth:
+                return "D32F_Depth";
+            case GfxImageFormat::R16G16B16A16_Unorm:
+                return "R16G16B16A16_Unorm";
+            case GfxImageFormat::R16G16B16A16_Snorm:
+                return "R16G16B16A16_Snorm";
+            case GfxImageFormat::R16G16B16A16_UInt:
+                return "R16G16B16A16_UInt";
+            case GfxImageFormat::R16G16B16A16_SInt:
+                return "R16G16B16A16_SInt";
+            case GfxImageFormat::R16G16B16A16_Float:
+                return "R16G16B16A16_Float";
+            case GfxImageFormat::D32FS8_Depth:
+                return "D32FS8_Depth";
+            case GfxImageFormat::R32G32_UInt:
+                return "R32G32_UInt";
+            case GfxImageFormat::R32G32_SInt:
+                return "R32G32_SInt";
+            case GfxImageFormat::R32G32_Float:
+                return "R32G32_Float";
+            case GfxImageFormat::R32G32B32_UInt:
+                return "R32G32B32_UInt";
+            case GfxImageFormat::R32G32B32_SInt:
+                return "R32G32B32_SInt";
+            case GfxImageFormat::R32G32B32_Float:
+                return "R32G32B32_Float";
+            case GfxImageFormat::R32G32B32A32_UInt:
+                return "R32G32B32A32_UInt";
+            case GfxImageFormat::R32G32B32A32_SInt:
+                return "R32G32B32A32_SInt";
+            case GfxImageFormat::R32G32B32A32_Float:
+                return "R32G32B32A32_Float";
+            case GfxImageFormat::BC1_Unorm:
+                return "BC1_Unorm";
+            case GfxImageFormat::BC1_SRGB:
+                return "BC1_SRGB";
+            case GfxImageFormat::BC3_Unorm:
+                return "BC3_Unorm";
+            case GfxImageFormat::BC3_SRGB:
+                return "BC3_SRGB";
+            case GfxImageFormat::BC4_Unorm:
+                return "BC4_Unorm";
+            case GfxImageFormat::BC4_Snorm:
+                return "BC4_Snorm";
+            case GfxImageFormat::BC5_Unorm:
+                return "BC5_Unorm";
+            case GfxImageFormat::BC5_Snorm:
+                return "BC5_Snorm";
+            case GfxImageFormat::BC6H_SF16:
+                return "BC6H_SF16";
+            case GfxImageFormat::BC6H_UF16:
+                return "BC6H_UF16";
+            case GfxImageFormat::BC7U_Unorm:
+                return "BC7U_Unorm";
+            case GfxImageFormat::BC7U_SRGB:
+                return "BC7U_SRGB";
+            case GfxImageFormat::ASTC_4X4_Unorm:
+                return "ASTC_4X4_Unorm";
+            case GfxImageFormat::ASTC_4X4_SRGB:
+                return "ASTC_4X4_SRGB";
+            case GfxImageFormat::ASTC_5X4_Unorm:
+                return "ASTC_5X4_Unorm";
+            case GfxImageFormat::ASTC_5X4_SRGB:
+                return "ASTC_5X4_SRGB";
+            case GfxImageFormat::ASTC_5X5_Unorm:
+                return "ASTC_5X5_Unorm";
+            case GfxImageFormat::ASTC_5X5_SRGB:
+                return "ASTC_5X5_SRGB";
+            case GfxImageFormat::ASTC_6X5_Unorm:
+                return "ASTC_6X5_Unorm";
+            case GfxImageFormat::ASTC_6X5_SRGB:
+                return "ASTC_6X5_SRGB";
+            case GfxImageFormat::ASTC_6X6_Unorm:
+                return "ASTC_6X6_Unorm";
+            case GfxImageFormat::ASTC_6X6_SRGB:
+                return "ASTC_6X6_SRGB";
+            case GfxImageFormat::ASTC_8X5_Unorm:
+                return "ASTC_8X5_Unorm";
+            case GfxImageFormat::ASTC_8X5_SRGB:
+                return "ASTC_8X5_SRGB";
+            case GfxImageFormat::ASTC_8X6_Unorm:
+                return "ASTC_8X6_Unorm";
+            case GfxImageFormat::ASTC_8X6_SRGB:
+                return "ASTC_8X6_SRGB";
+            case GfxImageFormat::ASTC_8X8_Unorm:
+                return "ASTC_8X8_Unorm";
+            case GfxImageFormat::ASTC_8X8_SRGB:
+                return "ASTC_8X8_SRGB";
+            case GfxImageFormat::ASTC_10X5_Unorm:
+                return "ASTC_10X5_Unorm";
+            case GfxImageFormat::ASTC_10X5_SRGB:
+                return "ASTC_10X5_SRGB";
+            case GfxImageFormat::ASTC_10X6_Unorm:
+                return "ASTC_10X6_Unorm";
+            case GfxImageFormat::ASTC_10X6_SRGB:
+                return "ASTC_10X6_SRGB";
+            case GfxImageFormat::ASTC_10X8_Unorm:
+                return "ASTC_10X8_Unorm";
+            case GfxImageFormat::ASTC_10X8_SRGB:
+                return "ASTC_10X8_SRGB";
+            case GfxImageFormat::ASTC_10X10_Unorm:
+                return "ASTC_10X10_Unorm";
+            case GfxImageFormat::ASTC_10X10_SRGB:
+                return "ASTC_10X10_SRGB";
+            case GfxImageFormat::ASTC_12X10_Unorm:
+                return "ASTC_12X10_Unorm";
+            case GfxImageFormat::ASTC_12X10_SRGB:
+                return "ASTC_12X10_SRGB";
+            case GfxImageFormat::ASTC_12X12_Unorm:
+                return "ASTC_12X12_Unorm";
+            case GfxImageFormat::ASTC_12X12_SRGB:
+                return "ASTC_12X12_SRGB";
+            case GfxImageFormat::B5G5R5A1_Unorm:
+                return "B5G5R5A1_Unorm";
+            default:
+                break;
+        }
+        return "Invalid";
+    }
+
+    constexpr ALWAYS_INLINE const char *GfxAttributeFormatToString(GfxAttributeFormat attribute_format) {
+        switch (attribute_format) {
+            case GfxAttributeFormat::None_Unorm:
+                return "None_Unorm";
+            case GfxAttributeFormat::R8_Unorm:
+                return "R8_Unorm";
+            case GfxAttributeFormat::R8_Snorm:
+                return "R8_Snorm";
+            case GfxAttributeFormat::R8_UInt:
+                return "R8_UInt";
+            case GfxAttributeFormat::R8_SInt:
+                return "R8_SInt";
+            case GfxAttributeFormat::R8_UScaled:
+                return "R8_UScaled";
+            case GfxAttributeFormat::R8_SScaled:
+                return "R8_SScaled";
+            case GfxAttributeFormat::R8G8_Unorm:
+                return "R8G8_Unorm";
+            case GfxAttributeFormat::R8G8_Snorm:
+                return "R8G8_Snorm";
+            case GfxAttributeFormat::R8G8_UInt:
+                return "R8G8_UInt";
+            case GfxAttributeFormat::R8G8_SInt:
+                return "R8G8_SInt";
+            case GfxAttributeFormat::R8G8_UScaled:
+                return "R8G8_UScaled";
+            case GfxAttributeFormat::R8G8_SScaled:
+                return "R8G8_SScaled";
+            case GfxAttributeFormat::R16_Unorm:
+                return "R16_Unorm";
+            case GfxAttributeFormat::R16_Snorm:
+                return "R16_Snorm";
+            case GfxAttributeFormat::R16_UInt:
+                return "R16_UInt";
+            case GfxAttributeFormat::R16_SInt:
+                return "R16_SInt";
+            case GfxAttributeFormat::R16_Float:
+                return "R16_Float";
+            case GfxAttributeFormat::R16_UScaled:
+                return "R16_UScaled";
+            case GfxAttributeFormat::R16_SScaled:
+                return "R16_SScaled";
+            case GfxAttributeFormat::R8G8B8A8_Unorm:
+                return "R8G8B8A8_Unorm";
+            case GfxAttributeFormat::R8G8B8A8_Snorm:
+                return "R8G8B8A8_Snorm";
+            case GfxAttributeFormat::R8G8B8A8_UInt:
+                return "R8G8B8A8_UInt";
+            case GfxAttributeFormat::R8G8B8A8_SInt:
+                return "R8G8B8A8_SInt";
+            case GfxAttributeFormat::R8G8B8A8_UScaled:
+                return "R8G8B8A8_UScaled";
+            case GfxAttributeFormat::R8G8B8A8_SScaled:
+                return "R8G8B8A8_SScaled";
+            case GfxAttributeFormat::R10G10B10A2_Unorm:
+                return "R10G10B10A2_Unorm";
+            case GfxAttributeFormat::R10G10B10A2_Snorm:
+                return "R10G10B10A2_Snorm";
+            case GfxAttributeFormat::R10G10B10A2_UInt:
+                return "R10G10B10A2_UInt";
+            case GfxAttributeFormat::R10G10B10A2_SInt:
+                return "R10G10B10A2_SInt";
+            case GfxAttributeFormat::R16G16_Unorm:
+                return "R16G16_Unorm";
+            case GfxAttributeFormat::R16G16_Snorm:
+                return "R16G16_Snorm";
+            case GfxAttributeFormat::R16G16_UInt:
+                return "R16G16_UInt";
+            case GfxAttributeFormat::R16G16_SInt:
+                return "R16G16_SInt";
+            case GfxAttributeFormat::R16G16_Float:
+                return "R16G16_Float";
+            case GfxAttributeFormat::R16G16_UScaled:
+                return "R16G16_UScaled";
+            case GfxAttributeFormat::R16G16_SScaled:
+                return "R16G16_SScaled";
+            case GfxAttributeFormat::R32_UInt:
+                return "R32_UInt";
+            case GfxAttributeFormat::R32_SInt:
+                return "R32_SInt";
+            case GfxAttributeFormat::R32_Float:
+                return "R32_Float";
+            case GfxAttributeFormat::R16G16B16A16_Unorm:
+                return "R16G16B16A16_Unorm";
+            case GfxAttributeFormat::R16G16B16A16_Snorm:
+                return "R16G16B16A16_Snorm";
+            case GfxAttributeFormat::R16G16B16A16_UInt:
+                return "R16G16B16A16_UInt";
+            case GfxAttributeFormat::R16G16B16A16_SInt:
+                return "R16G16B16A16_SInt";
+            case GfxAttributeFormat::R16G16B16A16_Float:
+                return "R16G16B16A16_Float";
+            case GfxAttributeFormat::R16G16B16A16_UScaled:
+                return "R16G16B16A16_UScaled";
+            case GfxAttributeFormat::R16G16B16A16_SScaled:
+                return "R16G16B16A16_SScaled";
+            case GfxAttributeFormat::R32G32_UInt:
+                return "R32G32_UInt";
+            case GfxAttributeFormat::R32G32_SInt:
+                return "R32G32_SInt";
+            case GfxAttributeFormat::R32G32_Float:
+                return "R32G32_Float";
+            case GfxAttributeFormat::R32G32B32_UInt:
+                return "R32G32B32_UInt";
+            case GfxAttributeFormat::R32G32B32_SInt:
+                return "R32G32B32_SInt";
+            case GfxAttributeFormat::R32G32B32_Float:
+                return "R32G32B32_Float";
+            case GfxAttributeFormat::R32G32B32A32_UInt:
+                return "R32G32B32A32_UInt";
+            case GfxAttributeFormat::R32G32B32A32_SInt:
+                return "R32G32B32A32_SInt";
+            case GfxAttributeFormat::R32G32B32A32_Float:
+                return "R32G32B32A32_Float";
             default:
                 break;
         }

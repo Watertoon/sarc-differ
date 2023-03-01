@@ -3,8 +3,8 @@ COMPILER_WARNS = -Wall -Wno-format-truncation -Wno-format-zero-length -Wno-strin
 SOURCE_INPUT = source/main.cpp
 OBJECT_INPUT =
 #Modes 
-RELEASE_FLAGS = -Os -flto -ftrivial-auto-var-init=zero
-DEBUG_FLAGS = -g -Og -flto -ftrivial-auto-var-init=zero
+RELEASE_FLAGS = -Os -s -DNDEBUG
+DEBUG_FLAGS = -g -Og
 #Links
 STD = -lstdc++ -lgdi32 -luser32 -lkernel32 -lole32 -lzstd
 
@@ -18,13 +18,13 @@ release-debug:
 	$(CXX) $(RELEASE_FLAGS) $(SOURCE_INPUT) $(COMPILER_FLAGS) $(STD) -o release-debug.exe
 
 release-O2:
-	$(CXX) -O2 $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-o2.exe
+	$(CXX) -O2 -s -flto $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-o2.exe
 
 release-O3:
-	$(CXX) -O3 $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-o3.exe
+	$(CXX) -O3 -s -flto $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-o3.exe
 
 release-Oz:
-	$(CXX) -Oz $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-oz.exe
+	$(CXX) -Oz -s $(SOURCE_INPUT) $(COMPILER_FLAGS) $(COMPILER_WARNS) -DNDEBUG $(STD) -o release-oz.exe
 
 clean:
-	rm edit release.exe debug.exe
+	rm edit release.exe debug.exe release-o2.exe release-o3.exe release-oz.exe

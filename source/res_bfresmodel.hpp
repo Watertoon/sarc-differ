@@ -41,6 +41,12 @@ namespace dd::res {
         u32                        reserve3;
 
         static constexpr u32 Magic = util::TCharCode32("FMDL");
+        
+        //void BindTexture(ResBfres::BindTextureCallback bind_callback, ResBntx *res_bntx) {
+        //    for (u32 i = 0; i < material_count; ++i) {
+        //        material_array[i].BindTexture(bind_callback, res_bntx);
+        //    }
+        //}
     };
     static_assert(sizeof(ResBfresModel) == 0x78);
 }

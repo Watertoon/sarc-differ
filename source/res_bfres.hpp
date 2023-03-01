@@ -35,7 +35,7 @@ namespace dd::res {
         ResNintendoWareDictionary  *shape_anim_dictionary;
         ResBfresSceneAnim          *scene_anim_array;
         ResNintendoWareDictionary  *scene_anim_dictionary;
-        void                       *memory_pool;
+        void                       *user_memory_pool;
         ResGfxMemoryPoolInfo       *memory_pool_info;
         ResGfxEmbedFile            *embed_file_array;
         ResNintendoWareDictionary  *embed_file_dictionary;
@@ -65,6 +65,23 @@ namespace dd::res {
         static bool IsValid(void *file) {
             ResBfres *fres = reinterpret_cast<ResBfres*>(file);
             return fres->ResNintendoWareFileHeader::IsValid(Magic, 10, 0, 0);
+        }
+        
+        //void BindTexture(BindTextureCallback bind_callback, ResBntx *res_bntx) {
+        //    for (u32 i = 0; i < model_count; ++i) {
+        //        model_array[i].BindTexture(bind_callback, res_bntx);
+        //    }
+        //    for (u32 i = 0; i < material_anim_count; ++i) {
+        //        material_anim_array[i].BindTexture(bind_callback, res_bntx);
+        //    }
+        //}
+
+        constexpr ALWAYS_INLINE u64 GetGpuMemorySize() {
+            return (memory_pool_info == nullptr) ? 0xffff'ffff'ffff'ffff : memory_pool_info->size;
+        }
+
+        constexpr ALWAYS_INLINE void *GetGpuMemoryRegion() {
+            return (memory_pool_info == nullptr) ? nullptr : memory_pool_info->storage;
         }
     };
     static_assert(sizeof(ResBfres) == 0xf0);

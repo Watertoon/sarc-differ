@@ -26,7 +26,7 @@
 #include "res_bwav.hpp"
 #include "res_bars.hpp"
 
-const char *GetRomfsPath(const char *string) {
+ALWAYS_INLINE const char *GetRomfsPath(const char *string) {
     const char *string_iter = string;
     while (*string_iter != '\0') {
         if (*string_iter == 'r') {
@@ -76,18 +76,23 @@ class RomfsDirectoryParser {
 
         bool Initialize(const char *path) {
 
+            if (path == nullptr) { return false; }
+
             /* Countup romfs files */
             {
                 std::filesystem::recursive_directory_iterator dir_counter(path);
                 for (const auto &dir_entry : dir_counter) {
                     if (dir_entry.is_regular_file() == true) {
-                        std::string r_path = dir_entry.path().string();
-                        const char *string = GetRomfsPath(r_path.c_str());
+                        auto r_path = dir_entry.path().native();
+                        std::string r_path_string(r_path.begin(), r_path.end());
+                        const char *string = GetRomfsPath(r_path_string.c_str());
                         if (::strcmp(string, "") == 0) { continue; }
                         ++m_file_count;
                     }
                 }
             }
+
+            if (m_file_count == 0) { return true; }
 
             /* Allocate storage for file path strings */
             m_file_paths = new char*[m_file_count];
@@ -108,8 +113,9 @@ class RomfsDirectoryParser {
                 u32 i = 0;
                 for (const auto &dir_entry : dir_iterator) {
                     if (dir_entry.is_regular_file() == true && i != m_file_count) {
-                        std::string r_path = dir_entry.path().string();
-                        const char *string = GetRomfsPath(r_path.c_str());
+                        auto r_path = dir_entry.path().native();
+                        std::string r_path_string(r_path.begin(), r_path.end());
+                        const char *string = GetRomfsPath(r_path_string.c_str());
                         if (::strcmp(string, "") == 0) { continue; }
                         ::strncpy(m_file_paths[i], string, MAX_PATH);
                         m_file_paths[i][MAX_PATH - 1] = '\0';
@@ -121,7 +127,6 @@ class RomfsDirectoryParser {
             if (1 < m_file_count) {
                 std::sort(m_file_paths, m_file_paths + m_file_count, StringCompare());
             }
-            
 
             return true;
         }

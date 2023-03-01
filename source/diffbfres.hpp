@@ -144,13 +144,13 @@ bool DiffBfres(void *l_file, void *r_file, u32 indent_level, bool is_print) {
             dd::res::ResBfresModel *l_model = l_bfres->model_array + l_bfres->model_dictionary->FindEntryIndex(l_model_paths[l_index]);
             dd::res::ResBfresModel *r_model = r_bfres->model_array + r_bfres->model_dictionary->FindEntryIndex(r_model_paths[i]);
 
-            const bool is_same = DiffBfresModel(l_model, r_model, indent_level + 1, false);
+            const bool is_same = DiffBfresModel(l_model, r_model, l_bfres->GetGpuMemoryRegion(), r_bfres->GetGpuMemoryRegion(), indent_level + 1, false);
             if (is_same == true) { continue; }
             if (is_print == false) { return false; }
             
             PrintIndent(indent_level + 1);
             std::cout << "Different: " << (l_model->model_name + 2) << ".fmdl" << std::endl;
-            DiffBfresModel(l_model, r_model, indent_level + 1, true);
+            DiffBfresModel(l_model, r_model, l_bfres->GetGpuMemoryRegion(), r_bfres->GetGpuMemoryRegion(), indent_level + 1, true);
         }
     }
 
