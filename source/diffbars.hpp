@@ -70,7 +70,8 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
             dd::res::ResAmta *r_amta = right_bars.GetAmtaByIndex(r_index);
             
             if (l_amta->IsValid() == false || r_amta->IsValid() == false) {
-                ::puts("Invalid bwav");
+                ::puts("Invalid bamta");
+                continue;
             }
 
             const u32 l_amta_size = l_amta->file_size;
@@ -87,6 +88,7 @@ void DiffBars(void *left_file, void *right_file, u32 indent_level) {
             
             if (l_bwav->IsValid() == false || r_bwav->IsValid() == false) {
                 ::puts("Invalid bwav");
+                continue;
             }
 
             const u32 l_bwav_size = CalculateBwavSize(l_bwav);
@@ -190,7 +192,8 @@ void ProcessBarsSingle(void *file, u32 indent_level, PrintSide print_side) {
         dd::res::ResAmta *amta = bars.GetAmtaByIndex(index);
         
         if (amta->IsValid() == false) {
-            ::puts("Invalid bwav");
+            ::puts("Invalid bamta");
+            continue;
         }
 
         const u32 amta_size = amta->file_size;
@@ -205,6 +208,7 @@ void ProcessBarsSingle(void *file, u32 indent_level, PrintSide print_side) {
         
         if (bwav->IsValid() == false) {
             ::puts("Invalid bwav");
+            continue;
         }
 
         const u32 bwav_size = CalculateBwavSize(bwav);

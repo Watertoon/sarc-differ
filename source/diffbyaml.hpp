@@ -218,7 +218,7 @@ void PrintByamlDataSingle(dd::res::ByamlIterator *iterator, dd::res::ByamlData d
         {
             const char *value  = nullptr;
             iterator->TryGetStringByData(std::addressof(value), data);
-            std::cout << "\"" << value << "\")" << std::endl;
+            std::cout << "\"" << value << "\"" << std::endl;
         }
         break;
         case dd::res::ByamlDataType::BinaryData:
@@ -842,7 +842,7 @@ class ByamlDictionaryParser {
             return true;
         }
 
-        ALWAYS_INLINE void ProcessAllByamlDataOnly(ByamlDictionaryParser *other_parser, [[maybe_unused]] const char *array_name_key,  u32 indent_level, PrintSide print_side) {
+        ALWAYS_INLINE void ProcessAllByamlDataOnly(ByamlDictionaryParser *other_parser, const char *array_name_key,  u32 indent_level, PrintSide print_side) {
 
             /* Print all data not found in other parser */
             ByamlDictionaryParser::IdentifierNode *nodes = this->GetNodeArray();
@@ -852,10 +852,10 @@ class ByamlDictionaryParser {
 
                 dd::res::ByamlData data;
                 m_root_iter.TryGetByamlDataByIndex(std::addressof(data), i);
-                PrintByamlDataSingle(std::addressof(m_root_iter), data, i, nullptr, indent_level, print_side);
+                PrintByamlDataSingle(std::addressof(m_root_iter), data, i, array_name_key, indent_level, print_side);
             }
         }
-        ALWAYS_INLINE void ProcessAllByamlDataSingle([[maybe_unused]] const char *array_name_key, u32 indent_level, PrintSide print_side) {
+        ALWAYS_INLINE void ProcessAllByamlDataSingle(const char *array_name_key, u32 indent_level, PrintSide print_side) {
 
             /* Print all data not found in other parser */
             //ByamlDictionaryParser::IdentifierNode *nodes = this->GetNodeArray();
@@ -863,7 +863,7 @@ class ByamlDictionaryParser {
 
                 dd::res::ByamlData data;
                 m_root_iter.TryGetByamlDataByIndex(std::addressof(data), i);
-                PrintByamlDataSingle(std::addressof(m_root_iter), data, i, nullptr, indent_level, print_side);
+                PrintByamlDataSingle(std::addressof(m_root_iter), data, i, array_name_key, indent_level, print_side);
             }
         }
 
