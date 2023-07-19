@@ -2,13 +2,13 @@
 Command-line diff tool for Nintendo EPD games built using that one game engine (ModuleSystem?) used in Splatoon 3 and Nintendo Switch Sports
 
 Supports:
-*Zstd and SZS decompression
-*Nintendo's sarc archive format
-*Nintendo EPD's byaml data interchange format up through v7
-*Nintendo EPD's bars v1.2 audio resource archive format
-*NintendoWare bntx v4.1.0 texture archive format
-*NintendoWare bea v1.1.0 Bezel Engine archive format
-*NintendoWare bfres v10 model resource format
+* Zstd and SZS decompression
+* Nintendo's sarc archive format
+* Nintendo EPD's byaml data interchange format up through v7
+* Nintendo EPD's bars v1.2 audio resource archive format
+* NintendoWare bntx v4.1.0 texture archive format
+* NintendoWare bea v1.1.0 Bezel Engine archive format
+* NintendoWare bfres v10 model resource format
 
 Usage: "sarcdiff.exe [left root of romfs directory] [right root of romfs directory]"
 
