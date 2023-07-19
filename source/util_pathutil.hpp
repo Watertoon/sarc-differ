@@ -294,7 +294,7 @@ namespace dd::util {
 
         /* Get file name offset */
         const u32 ext_start_offset  = FindExtensionDelimiter(path_with_extension, path_len);
-        const u32 name_start_offset = FindDirectoryDelimiter(path_with_extension, path_len);
+        const u32 name_start_offset = FindDirectoryDelimiter(path_with_extension, path_len) - 1;
 
         /* Copy string from last delimiter */
         const u32 name_size = path_len - name_start_offset - (path_len - ext_start_offset);

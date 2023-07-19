@@ -18,14 +18,16 @@
 struct OptionEntry {
     const char *option_name;
     const char *option_value;
-    u32         data_type;
+    u32         argv_index;
 };
 
 template <size_t Size>
 class OptionParser {
     private:
-        util::FixedObjectAllocator<OptionEntry, Size> m_option_allocator;
-        util::FixedPointerArray<OptionEntry, Size>    m_allocated_options;
+        util::FixedObjectAllocator<OptionEntry, Size>   m_option_allocator;
+        util::FixedPointerArray<OptionEntry, Size>      m_allocated_options;
+        const char                                    **m_extra_args;
+        u32                                             m_extra_arg_count;
     public:
         constexpr OptionParser() {/*...*/}
 
@@ -43,22 +45,25 @@ class OptionParser {
         }
 
         void Parse(int argc, char **argv) {
-            /* Use latest valid option */
+
+            /* Find and use valid options */
             for (u32 i = 0; i < m_allocated_options.GetUsedCount(); ++i) {
                 for (int j = 0; j < argc - 1; ++j) {
                     if (::strcmp(m_allocated_options[i]->option_name, argv[j]) == 0) {
                         m_allocated_options[i]->option_value = argv[j + 1];
+                        m_allocated_options[i]->argv_index   = j;
+                        ++j;
                     }
                 }
             }
         }
-        
-        template<typename T>
-        const char *GetOption(const char *option_name) {
+
+        u32 FindArgvIndex(const char *option_name) {
+
             /* Find option by name */
             for (u32 i = 0; i < m_allocated_options.GetUsedCount(); ++i) {
                 if (::strcmp(m_allocated_options[i]->option_name, option_name) == 0) {
-                    return m_allocated_options[i]->option_value;
+                    return m_allocated_options[i]->argv_index;
                 }
             }
         }

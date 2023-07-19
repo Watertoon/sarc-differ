@@ -1,14 +1,14 @@
 #pragma once
 
-int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r_iterator, dd::res::ByamlData lhs, dd::res::ByamlData rhs) {
+int CompareByamlData(vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator, vp::res::ByamlData lhs, vp::res::ByamlData rhs) {
 
     const u8 left_type  = lhs.data_type;
     const u8 right_type = rhs.data_type;
     if (right_type < left_type) { return 1; }
     if (left_type < right_type) { return -1; }
 
-    switch (static_cast<dd::res::ByamlDataType>(left_type)) {
-        case dd::res::ByamlDataType::StringIndex:
+    switch (static_cast<vp::res::ByamlDataType>(left_type)) {
+        case vp::res::ByamlDataType::StringIndex:
         {
             const char *left  = nullptr;
             const char *right = nullptr;
@@ -16,23 +16,26 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             r_iterator->TryGetStringByData(std::addressof(right), rhs);
             return ::strcmp(left, right);
         }
-        case dd::res::ByamlDataType::BinaryData:
-        case dd::res::ByamlDataType::BinaryDataPlus:
+        case vp::res::ByamlDataType::BinaryData:
+        case vp::res::ByamlDataType::BinaryDataWithAlignment:
         {
             void *left  = nullptr;
             void *right = nullptr;
             u32 left_size  = 0;
             u32 right_size = 0;
-            l_iterator->TryGetBinaryDataByData(std::addressof(left), std::addressof(left_size), lhs);
-            r_iterator->TryGetBinaryDataByData(std::addressof(right), std::addressof(right_size), rhs);
+            u32 left_alignment = 0;
+            u32 right_alignment = 0;
+            l_iterator->TryGetBinaryDataByData(std::addressof(left), std::addressof(left_size), std::addressof(left_alignment), lhs);
+            r_iterator->TryGetBinaryDataByData(std::addressof(right), std::addressof(right_size), std::addressof(right_alignment), rhs);
             if (right_size < left_size) { return 1; }
             if (left_size < right_size) { return -1; }
             return ::memcmp(left, right, left_size);
         }
-        case dd::res::ByamlDataType::Array:
+        case vp::res::ByamlDataType::MonoTypedArray:
+        case vp::res::ByamlDataType::Array:
         {
-            dd::res::ByamlIterator left;
-            dd::res::ByamlIterator right;
+            vp::res::ByamlIterator left;
+            vp::res::ByamlIterator right;
             l_iterator->TryGetIteratorByData(std::addressof(left), lhs);
             r_iterator->TryGetIteratorByData(std::addressof(right), rhs);
 
@@ -40,8 +43,8 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left.GetDataCount() < right.GetDataCount()) { return -1; }
 
             for (u32 i = 0; i < left.GetDataCount(); ++i) {
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
                 left.TryGetByamlDataByIndex(std::addressof(left_data), i);
                 right.TryGetByamlDataByIndex(std::addressof(right_data), i);
                 const s32 compare_result = CompareByamlData(std::addressof(left), std::addressof(right), left_data, right_data);
@@ -50,10 +53,11 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
 
             return 0;
         }
-        case dd::res::ByamlDataType::Dictionary:
+        case vp::res::ByamlDataType::Dictionary:
+        case vp::res::ByamlDataType::DictionaryWithRemap:
         {
-            dd::res::ByamlIterator left;
-            dd::res::ByamlIterator right;
+            vp::res::ByamlIterator left;
+            vp::res::ByamlIterator right;
             l_iterator->TryGetIteratorByData(std::addressof(left), lhs);
             r_iterator->TryGetIteratorByData(std::addressof(right), rhs);
 
@@ -61,8 +65,8 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left.GetDataCount() < right.GetDataCount()) { return -1; }
 
             for (u32 i = 0; i < left.GetDataCount(); ++i) {
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
                 left.TryGetByamlDataByIndex(std::addressof(left_data), i);
                 const char *left_key = nullptr;
                 left.TryGetKeyByData(std::addressof(left_key), left_data);
@@ -74,9 +78,9 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
 
             return 0;
         }
-        case dd::res::ByamlDataType::KeyTable:
+        case vp::res::ByamlDataType::KeyTable:
             return 0;
-        case dd::res::ByamlDataType::Bool:
+        case vp::res::ByamlDataType::Bool:
         {
             bool left  = 0;
             bool right = 0;
@@ -86,7 +90,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::S32:
+        case vp::res::ByamlDataType::S32:
         {
             s32 left  = 0;
             s32 right = 0;
@@ -96,7 +100,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::F32:
+        case vp::res::ByamlDataType::F32:
         {
             float left  = 0.0;
             float right = 0.0;
@@ -106,7 +110,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::U32:
+        case vp::res::ByamlDataType::U32:
         {
             u32 left  = 0;
             u32 right = 0;
@@ -116,7 +120,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::S64:
+        case vp::res::ByamlDataType::S64:
         {
             s64 left  = 0;
             s64 right = 0;
@@ -126,7 +130,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::U64:
+        case vp::res::ByamlDataType::U64:
         {
             u64 left  = 0;
             u64 right = 0;
@@ -136,7 +140,7 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             if (left  < right) { return -1; }
             return 0;
         }
-        case dd::res::ByamlDataType::F64:
+        case vp::res::ByamlDataType::F64:
         {
             double left  = 0.0;
             double right = 0.0;
@@ -147,14 +151,19 @@ int CompareByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator 
             return 0;
         }
         default:
-        case dd::res::ByamlDataType::Null:
-        case dd::res::ByamlDataType::Unknown:
+        case vp::res::ByamlDataType::Null:
         break;
     }
     return 0;
 }
 
-int CompareByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r_iterator) {
+int CompareByamlIterator(vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator) {
+
+    const bool l_is_valid = l_iterator->IsValid();
+    const bool r_is_valid = r_iterator->IsValid();
+    if (r_is_valid < l_is_valid) { return 1; }
+    if (l_is_valid < r_is_valid) { return -1; }
+    if (l_is_valid == false && r_is_valid == false) { return 0; }
 
     const u32 left_count  = l_iterator->GetDataCount();
     const u32 right_count = r_iterator->GetDataCount();
@@ -166,11 +175,11 @@ int CompareByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlItera
     if (right_type < left_type) { return 1; }
     if (left_type < right_type) { return -1; }
 
-    if (static_cast<dd::res::ByamlDataType>(left_type) == dd::res::ByamlDataType::Array) {
+    if (static_cast<vp::res::ByamlDataType>(left_type) == vp::res::ByamlDataType::Array || static_cast<vp::res::ByamlDataType>(left_type) == vp::res::ByamlDataType::MonoTypedArray) {
 
         for (u32 i = 0; i < left_count; ++i) {
-            dd::res::ByamlData left_data;
-            dd::res::ByamlData right_data;
+            vp::res::ByamlData left_data;
+            vp::res::ByamlData right_data;
             l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
             r_iterator->TryGetByamlDataByIndex(std::addressof(right_data), i);
             const bool compare_result = CompareByamlData(l_iterator, r_iterator, left_data, right_data);
@@ -178,11 +187,11 @@ int CompareByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlItera
         }
         return 0;
     }
-    if (static_cast<dd::res::ByamlDataType>(left_type) != dd::res::ByamlDataType::Dictionary) { return 0; }
+    if (static_cast<vp::res::ByamlDataType>(left_type) != vp::res::ByamlDataType::Dictionary && static_cast<vp::res::ByamlDataType>(left_type) != vp::res::ByamlDataType::DictionaryWithRemap) { return 0; }
 
     for (u32 i = 0; i < left_count; ++i) {
-        dd::res::ByamlData left_data;
-        dd::res::ByamlData right_data;
+        vp::res::ByamlData left_data;
+        vp::res::ByamlData right_data;
         l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
         const char *left_key = nullptr;
         l_iterator->TryGetKeyByData(std::addressof(left_key), left_data);
@@ -194,7 +203,7 @@ int CompareByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlItera
     return 0;
 }
 
-void PrintByamlDataKey(dd::res::ByamlIterator *iterator, dd::res::ByamlData data, u32 array_index) {
+void PrintByamlDataKey(vp::res::ByamlIterator *iterator, vp::res::ByamlData data, u32 array_index) {
 
     const char *key = nullptr;
     const bool key_result = iterator->TryGetKeyByData(std::addressof(key), data);
@@ -205,37 +214,38 @@ void PrintByamlDataKey(dd::res::ByamlIterator *iterator, dd::res::ByamlData data
     }
 }
 
-void PrintByamlDataSingle(dd::res::ByamlIterator *iterator, dd::res::ByamlData data, u32 array_index, const char *array_name_key, u32 indent_level, PrintSide print_side) {
+void PrintByamlDataSingle(vp::res::ByamlIterator *iterator, vp::res::ByamlData data, u32 array_index, const char *array_name_key, u32 indent_level, PrintSide print_side) {
 
     PrintIndent(indent_level);
     PrintOnlySide(print_side);
     std::cout << "(key: ";
     PrintByamlDataKey(iterator, data, array_index);
-    std::cout << ")(DataType: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(data.data_type)) << "): ";
+    std::cout << ")(DataType: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(data.data_type)) << "): ";
 
-    switch (static_cast<dd::res::ByamlDataType>(data.data_type)) {
-        case dd::res::ByamlDataType::StringIndex:
+    switch (static_cast<vp::res::ByamlDataType>(data.data_type)) {
+        case vp::res::ByamlDataType::StringIndex:
         {
             const char *value  = nullptr;
             iterator->TryGetStringByData(std::addressof(value), data);
             std::cout << "\"" << value << "\"" << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::BinaryData:
-        case dd::res::ByamlDataType::BinaryDataPlus:
+        case vp::res::ByamlDataType::BinaryData:
+        case vp::res::ByamlDataType::BinaryDataWithAlignment:
         {
             std::cout << "(BinaryData):" << std::endl;
-            void *binary  = nullptr;
-            u32 binary_size  = 0;
-            iterator->TryGetBinaryDataByData(std::addressof(binary), std::addressof(binary_size), data);
+            void *binary          = nullptr;
+            u32 binary_size       = 0;
+            u32 binary_alignment  = 0;
+            iterator->TryGetBinaryDataByData(std::addressof(binary), std::addressof(binary_size), std::addressof(binary_alignment), data);
             const char *path = "(Unnamed Binary Data)";
             iterator->TryGetKeyByData(std::addressof(path), data);
             ProcessSingleImpl(binary, binary_size, path, indent_level + 1, print_side);
         }
         break;
-        case dd::res::ByamlDataType::Array:
+        case vp::res::ByamlDataType::Array:
         {
-            dd::res::ByamlIterator iter;
+            vp::res::ByamlIterator iter;
             iterator->TryGetIteratorByIndex(std::addressof(iter), array_index);
 
             const char *name = "";
@@ -248,15 +258,15 @@ void PrintByamlDataSingle(dd::res::ByamlIterator *iterator, dd::res::ByamlData d
             }
 
             for (u32 i = 0; i < iter.GetDataCount(); ++i) {
-                dd::res::ByamlData value;
+                vp::res::ByamlData value;
                 iter.TryGetByamlDataByIndex(std::addressof(value), i);
                 PrintByamlDataSingle(std::addressof(iter), value, i, nullptr, indent_level + 1, print_side);
             }
         }
         break;
-        case dd::res::ByamlDataType::Dictionary:
+        case vp::res::ByamlDataType::Dictionary:
         {
-            dd::res::ByamlIterator iter;
+            vp::res::ByamlIterator iter;
             iterator->TryGetIteratorByIndex(std::addressof(iter), array_index);
 
             const char *name = "";
@@ -269,156 +279,154 @@ void PrintByamlDataSingle(dd::res::ByamlIterator *iterator, dd::res::ByamlData d
             }
 
             for (u32 i = 0; i < iter.GetDataCount(); ++i) {
-                dd::res::ByamlData value;
+                vp::res::ByamlData value;
                 iter.TryGetByamlDataByIndex(std::addressof(value), i);
                 PrintByamlDataSingle(std::addressof(iter), value, i, nullptr, indent_level + 1, print_side);
             }
         }
         break;
-        case dd::res::ByamlDataType::KeyTable:
+        case vp::res::ByamlDataType::KeyTable:
             return;
-        case dd::res::ByamlDataType::Bool:
+        case vp::res::ByamlDataType::Bool:
         {
             bool value  = 0;
             iterator->TryGetBoolByData(std::addressof(value), data);
             std::cout << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::S32:
+        case vp::res::ByamlDataType::S32:
         {
             s32 value  = 0;
             iterator->TryGetS32ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::dec << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::F32:
+        case vp::res::ByamlDataType::F32:
         {
             float value = 0.0;
             iterator->TryGetF32ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::fixed << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::U32:
+        case vp::res::ByamlDataType::U32:
         {
             u32 value = 0;
             iterator->TryGetU32ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::dec << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::S64:
+        case vp::res::ByamlDataType::S64:
         {
             s64 value = 0;
             iterator->TryGetS64ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::dec << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::U64:
+        case vp::res::ByamlDataType::U64:
         {
             u64 value = 0;
             iterator->TryGetU64ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::dec << value << std::endl;
         }
         break;
-        case dd::res::ByamlDataType::F64:
+        case vp::res::ByamlDataType::F64:
         {
             double value = 0.0;
             iterator->TryGetF64ByData(std::addressof(value), data);
-            std::cout << value << std::endl;
+            std::cout << std::fixed << value << std::endl;
         }
         break;
         default:
-        case dd::res::ByamlDataType::Null:
-        case dd::res::ByamlDataType::Unknown:
+        case vp::res::ByamlDataType::Null:
             std::cout  << "Null" << std::endl;
         break;
     }
 }
 
-void PrintByamlIteratorSingle(dd::res::ByamlIterator *iterator, [[maybe_unused]] u32 array_index, u32 indent_level, PrintSide print_side) {
+void PrintByamlIteratorSingle(vp::res::ByamlIterator *iterator, [[maybe_unused]] u32 array_index, u32 indent_level, PrintSide print_side) {
 
     for (u32 i = 0; i < iterator->GetDataCount(); ++i) {
-        dd::res::ByamlData data;
+        vp::res::ByamlData data;
         iterator->TryGetByamlDataByIndex(std::addressof(data), i);
         PrintByamlDataSingle(iterator, data, i, "", indent_level, print_side);
     }
 }
 
-void PrintOnlyByamlData(dd::res::ByamlIterator *iterator, dd::res::ByamlData data) {
+void PrintOnlyByamlData(vp::res::ByamlIterator *iterator, vp::res::ByamlData data) {
 
-    switch (static_cast<dd::res::ByamlDataType>(data.data_type)) {
-        case dd::res::ByamlDataType::StringIndex:
+    switch (static_cast<vp::res::ByamlDataType>(data.data_type)) {
+        case vp::res::ByamlDataType::StringIndex:
         {
             const char *value  = nullptr;
             iterator->TryGetStringByData(std::addressof(value), data);
             std::cout << "\"" << value << "\"";
         }
         break;
-        case dd::res::ByamlDataType::BinaryData:
-        case dd::res::ByamlDataType::BinaryDataPlus:
-        case dd::res::ByamlDataType::Array:
-        case dd::res::ByamlDataType::Dictionary:
-        case dd::res::ByamlDataType::KeyTable:
-        case dd::res::ByamlDataType::Unknown:
+        case vp::res::ByamlDataType::BinaryData:
+        case vp::res::ByamlDataType::BinaryDataWithAlignment:
+        case vp::res::ByamlDataType::Array:
+        case vp::res::ByamlDataType::Dictionary:
+        case vp::res::ByamlDataType::KeyTable:
+        default:
             std::cout << "NotSupported";
         break;
-        case dd::res::ByamlDataType::Bool:
+        case vp::res::ByamlDataType::Bool:
         {
             bool value  = 0;
             iterator->TryGetBoolByData(std::addressof(value), data);
             std::cout << value;
         }
         break;
-        case dd::res::ByamlDataType::S32:
+        case vp::res::ByamlDataType::S32:
         {
             s32 value  = 0;
             iterator->TryGetS32ByData(std::addressof(value), data);
             std::cout << std::dec << value;
         }
         break;
-        case dd::res::ByamlDataType::F32:
+        case vp::res::ByamlDataType::F32:
         {
             float value = 0.0;
             iterator->TryGetF32ByData(std::addressof(value), data);
-            std::cout << value;
+            std::cout << std::fixed << value;
         }
         break;
-        case dd::res::ByamlDataType::U32:
+        case vp::res::ByamlDataType::U32:
         {
             u32 value = 0;
             iterator->TryGetU32ByData(std::addressof(value), data);
             std::cout << std::dec << value;
         }
         break;
-        case dd::res::ByamlDataType::S64:
+        case vp::res::ByamlDataType::S64:
         {
             s64 value = 0;
             iterator->TryGetS64ByData(std::addressof(value), data);
             std::cout << std::dec << value;
         }
         break;
-        case dd::res::ByamlDataType::U64:
+        case vp::res::ByamlDataType::U64:
         {
             u64 value = 0;
             iterator->TryGetU64ByData(std::addressof(value), data);
             std::cout << std::dec << value;
         }
         break;
-        case dd::res::ByamlDataType::F64:
+        case vp::res::ByamlDataType::F64:
         {
             double value = 0.0;
             iterator->TryGetF64ByData(std::addressof(value), data);
-            std::cout << value;
+            std::cout << std::fixed << value;
         }
         break;
-        default:
-        case dd::res::ByamlDataType::Null:
-        std::cout << "Null";
+        case vp::res::ByamlDataType::Null:
+            std::cout << "Null";
         break;
     }
     return;
 }
 
-void PrintByamlDataNames(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r_iterator, dd::res::ByamlData lhs, dd::res::ByamlData rhs, u32 l_array_index, u32 r_array_index) {
+void PrintByamlDataNames(vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator, vp::res::ByamlData lhs, vp::res::ByamlData rhs, u32 l_array_index, u32 r_array_index) {
 
     /* Handle <array> */
     const char *l_name = nullptr;
@@ -447,9 +455,13 @@ void PrintByamlDataNames(dd::res::ByamlIterator *l_iterator, dd::res::ByamlItera
             }
         }
     }
+
+    return;
 }
 
-void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r_iterator, dd::res::ByamlData lhs, dd::res::ByamlData rhs, u32 l_array_index, u32 r_array_index, const char *array_name_key, u32 indent_level) {
+
+using ByamlDataOverrideCallback = bool (*) (vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator, vp::res::ByamlData lhs, vp::res::ByamlData rhs, u32 index);
+void DiffByamlData(vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator, vp::res::ByamlData lhs, vp::res::ByamlData rhs, u32 l_array_index, u32 r_array_index, const char *array_name_key, ByamlDataOverrideCallback override_callback, u32 indent_level) {
 
     const u8 left_type  = lhs.data_type;
     const u8 right_type = rhs.data_type;
@@ -458,23 +470,30 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
         PrintIndent(indent_level);
         std::cout << "DataType Change";
         PrintByamlDataNames(l_iterator, r_iterator, lhs, rhs, l_array_index, r_array_index);
-        std::cout << ": (left: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(left_type)) << ")(right: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(right_type)) << ")" << std::endl;
+        std::cout << ": (left: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(left_type)) << ")(right: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(right_type)) << ")" << std::endl;
         return;
+    }
+
+    if (override_callback != nullptr) {
+        const bool result = (override_callback)(l_iterator, r_iterator, lhs, rhs, indent_level);
+        if (result == true) { return; }
     }
 
     const s32 compare_result0 = CompareByamlData(l_iterator, r_iterator, lhs, rhs);
     if (compare_result0 == 0) { return; }
 
-    switch (static_cast<dd::res::ByamlDataType>(left_type)) {
-        case dd::res::ByamlDataType::BinaryData:
-        case dd::res::ByamlDataType::BinaryDataPlus:
+    switch (static_cast<vp::res::ByamlDataType>(left_type)) {
+        case vp::res::ByamlDataType::BinaryData:
+        case vp::res::ByamlDataType::BinaryDataWithAlignment:
         {
             void *left  = nullptr;
             void *right = nullptr;
             u32 left_size  = 0;
             u32 right_size = 0;
-            l_iterator->TryGetBinaryDataByData(std::addressof(left), std::addressof(left_size), lhs);
-            r_iterator->TryGetBinaryDataByData(std::addressof(right), std::addressof(right_size), rhs);
+            u32 left_alignment  = 0;
+            u32 right_alignment = 0;
+            l_iterator->TryGetBinaryDataByData(std::addressof(left), std::addressof(left_size), std::addressof(left_alignment), lhs);
+            r_iterator->TryGetBinaryDataByData(std::addressof(right), std::addressof(right_size), std::addressof(right_alignment), rhs);
             
             if (left_size != right_size || ::memcmp(left, right, left_size) != 0) {
                 PrintIndent(indent_level);
@@ -487,10 +506,11 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             }
         }
         break;
-        case dd::res::ByamlDataType::Array:
+        case vp::res::ByamlDataType::MonoTypedArray:
+        case vp::res::ByamlDataType::Array:
         {
-            dd::res::ByamlIterator left;
-            dd::res::ByamlIterator right;
+            vp::res::ByamlIterator left;
+            vp::res::ByamlIterator right;
             l_iterator->TryGetIteratorByData(std::addressof(left), lhs);
             r_iterator->TryGetIteratorByData(std::addressof(right), rhs);
 
@@ -516,21 +536,23 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             for (u32 i = 0; i < left.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
-                left.TryGetByamlDataByIndex(std::addressof(left_data), i);
-                right.TryGetByamlDataByIndex(std::addressof(right_data), i);
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
+                const bool result0 = left.TryGetByamlDataByIndex(std::addressof(left_data), i);
+                if (result0 == false) { continue; }
+                const bool result1 = right.TryGetByamlDataByIndex(std::addressof(right_data), i);
+                if (result1 == false) { continue; }
 
                 /* Diff data */
                 const s32 compare_result1 = CompareByamlData(std::addressof(left), std::addressof(right), left_data, right_data);
                 if (compare_result1 == 0) { continue; }
-                DiffByamlData(std::addressof(left), std::addressof(right), left_data, right_data, i, i, nullptr, indent_level + 1);
+                DiffByamlData(std::addressof(left), std::addressof(right), left_data, right_data, i, i, nullptr, override_callback, indent_level + 1);
             }
 
             for (u32 i = left.GetDataCount(); i < right.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData data;
+                vp::res::ByamlData data;
                 right.TryGetByamlDataByIndex(std::addressof(data), i);
 
                 PrintByamlDataSingle(std::addressof(right), data, i, nullptr, indent_level + 1, PrintSide::Right);
@@ -539,17 +561,18 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             for (u32 i = right.GetDataCount(); i < left.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData data;
+                vp::res::ByamlData data;
                 left.TryGetByamlDataByIndex(std::addressof(data), i);
 
                 PrintByamlDataSingle(std::addressof(left), data, i, nullptr, indent_level + 1, PrintSide::Left);
             }
         }
         break;
-        case dd::res::ByamlDataType::Dictionary:
+        case vp::res::ByamlDataType::DictionaryWithRemap:
+        case vp::res::ByamlDataType::Dictionary:
         {
-            dd::res::ByamlIterator left;
-            dd::res::ByamlIterator right;
+            vp::res::ByamlIterator left;
+            vp::res::ByamlIterator right;
             l_iterator->TryGetIteratorByData(std::addressof(left), lhs);
             r_iterator->TryGetIteratorByData(std::addressof(right), rhs);
 
@@ -576,8 +599,8 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             for (u32 i = 0; i < left.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
                 left.TryGetByamlDataByIndex(std::addressof(left_data), i);
                 const char *left_key = nullptr;
                 left.TryGetKeyByData(std::addressof(left_key), left_data);
@@ -585,21 +608,21 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
                 if (get_result == false) { continue; }
 
                 u32 r_index = 0;
-                const bool index_result = right.TryGetIndexByKey(std::addressof(r_index), left_key);
+                const bool index_result = right.TryRemapIndexByKey(std::addressof(r_index), left_key);
                 if (index_result == false) { return; }
 
                 /* Diff data */
                 const s32 compare_result1 = CompareByamlData(std::addressof(left), std::addressof(right), left_data, right_data);
                 if (compare_result1 == 0) { continue; }
-                DiffByamlData(std::addressof(left), std::addressof(right), left_data, right_data, i, r_index, nullptr, indent_level + 1);
+                DiffByamlData(std::addressof(left), std::addressof(right), left_data, right_data, i, r_index, nullptr, override_callback, indent_level + 1);
             }
 
             /* Right */
             for (u32 i = 0; i < right.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
                 right.TryGetByamlDataByIndex(std::addressof(right_data), i);
 
                 /* Find if the key is not found in the other byaml */
@@ -615,8 +638,8 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             for (u32 i = 0; i < left.GetDataCount(); ++i) {
 
                 /* Get Byaml Data */
-                dd::res::ByamlData left_data;
-                dd::res::ByamlData right_data;
+                vp::res::ByamlData left_data;
+                vp::res::ByamlData right_data;
                 left.TryGetByamlDataByIndex(std::addressof(left_data), i);
 
                 /* Find if the key is not found in the other byaml */
@@ -634,7 +657,7 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
             PrintIndent(indent_level);
             std::cout << "Different";
             PrintByamlDataNames(l_iterator, r_iterator, lhs, rhs, l_array_index, r_array_index);
-            std::cout << "(DataType: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(left_type)) << ")";
+            std::cout << "(DataType: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(left_type)) << ")";
             std::cout << ": (left: ";
             PrintOnlyByamlData(l_iterator, lhs);
             std::cout << ")(right: ";
@@ -646,38 +669,39 @@ void DiffByamlData(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r
     return;
 }
 
-void DiffByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterator *r_iterator, u32 indent_level) {
+void DiffByamlIterator(vp::res::ByamlIterator *l_iterator, vp::res::ByamlIterator *r_iterator, u32 indent_level) {
 
     u8 l_data_type = l_iterator->GetDataType();
     u8 r_data_type = r_iterator->GetDataType();
     if (r_data_type != l_data_type) {
         PrintIndent(indent_level);
         std::cout << "DataType Change(root)";
-        std::cout << ": (left: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(l_data_type)) << ")(right: " << dd::res::ByamlDataTypeToString(static_cast<dd::res::ByamlDataType>(r_data_type)) << ")" << std::endl;
+        std::cout << ": (left: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(l_data_type)) << ")(right: " << vp::res::ByamlDataTypeToString(static_cast<vp::res::ByamlDataType>(r_data_type)) << ")" << std::endl;
         return;
     }
 
-    if (static_cast<dd::res::ByamlDataType>(l_data_type) == dd::res::ByamlDataType::Array) {
+    if (static_cast<vp::res::ByamlDataType>(l_data_type) == vp::res::ByamlDataType::Array || static_cast<vp::res::ByamlDataType>(l_data_type) == vp::res::ByamlDataType::MonoTypedArray) {
         
         for (u32 i = 0; i < l_iterator->GetDataCount(); ++i) {
 
             /* Get Byaml Data */
-            dd::res::ByamlData left_data;
-            dd::res::ByamlData right_data;
-            l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
-            r_iterator->TryGetByamlDataByIndex(std::addressof(right_data), i);
+            vp::res::ByamlData left_data;
+            vp::res::ByamlData right_data;
+            const bool result0 = l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
+            const bool result1 = r_iterator->TryGetByamlDataByIndex(std::addressof(right_data), i);
+            if (result0 == false || result1 == false) { continue; }
 
             /* Diff data */
             const s32 compare_result1 = CompareByamlData(l_iterator, r_iterator, left_data, right_data);
             if (compare_result1 == 0) { continue; }
 
-            DiffByamlData(l_iterator, r_iterator, left_data, right_data, i, i, nullptr, indent_level + 1);
+            DiffByamlData(l_iterator, r_iterator, left_data, right_data, i, i, nullptr, nullptr, indent_level + 1);
         }
 
         for (u32 i = l_iterator->GetDataCount(); i < r_iterator->GetDataCount(); ++i) {
 
             /* Get Byaml Data */
-            dd::res::ByamlData data;
+            vp::res::ByamlData data;
             r_iterator->TryGetByamlDataByIndex(std::addressof(data), i);
 
             PrintByamlDataSingle(r_iterator, data, i, nullptr, indent_level + 1, PrintSide::Right);
@@ -686,13 +710,13 @@ void DiffByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterato
         for (u32 i = r_iterator->GetDataCount(); i < l_iterator->GetDataCount(); ++i) {
 
             /* Get Byaml Data */
-            dd::res::ByamlData data;
+            vp::res::ByamlData data;
             l_iterator->TryGetByamlDataByIndex(std::addressof(data), i);
 
             PrintByamlDataSingle(l_iterator, data, i, nullptr, indent_level + 1, PrintSide::Left);
         }
         
-    } else if (static_cast<dd::res::ByamlDataType>(l_data_type) != dd::res::ByamlDataType::Dictionary) {
+    } else if (static_cast<vp::res::ByamlDataType>(l_data_type) != vp::res::ByamlDataType::Dictionary && static_cast<vp::res::ByamlDataType>(l_data_type) != vp::res::ByamlDataType::DictionaryWithRemap) {
         std::cout << "Unknown root type" << std::endl;
         return;
     }
@@ -700,30 +724,32 @@ void DiffByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterato
     for (u32 i = 0; i < l_iterator->GetDataCount(); ++i) {
 
         /* Get Byaml Data */
-        dd::res::ByamlData left_data;
-        dd::res::ByamlData right_data;
-        l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
+        vp::res::ByamlData left_data;
+        vp::res::ByamlData right_data;
+        const bool result0 = l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
+        if (result0 == false) { continue; }
         const char *left_key = nullptr;
-        l_iterator->TryGetKeyByData(std::addressof(left_key), left_data);
-        const bool get_result = r_iterator->TryGetByamlDataByKey(std::addressof(right_data), left_key);
-        if (get_result == false) { continue; }
+        const bool result1 = l_iterator->TryGetKeyByData(std::addressof(left_key), left_data);
+        if (result1 == false) { continue; }
+        const bool result2 = r_iterator->TryGetByamlDataByKey(std::addressof(right_data), left_key);
+        if (result2 == false) { continue; }
 
         u32 r_index = 0;
-        const bool index_result = r_iterator->TryGetIndexByKey(std::addressof(r_index), left_key);
-        if (index_result == false) { return; }
+        const bool index_result = r_iterator->TryRemapIndexByKey(std::addressof(r_index), left_key);
+        if (index_result == false) { continue; }
 
         /* Diff data */
         const s32 compare_result1 = CompareByamlData(l_iterator, r_iterator, left_data, right_data);
         if (compare_result1 == 0) { continue; }
-        DiffByamlData(l_iterator, r_iterator, left_data, right_data, i, r_index, nullptr, indent_level + 1);
+        DiffByamlData(l_iterator, r_iterator, left_data, right_data, i, r_index, nullptr, nullptr, indent_level + 1);
     }
 
     /* Right */
     for (u32 i = 0; i < r_iterator->GetDataCount(); ++i) {
 
         /* Get Byaml Data */
-        dd::res::ByamlData left_data;
-        dd::res::ByamlData right_data;
+        vp::res::ByamlData left_data;
+        vp::res::ByamlData right_data;
         r_iterator->TryGetByamlDataByIndex(std::addressof(right_data), i);
 
         /* Find if the key is not found in the other byaml */
@@ -739,8 +765,8 @@ void DiffByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterato
     for (u32 i = 0; i < l_iterator->GetDataCount(); ++i) {
 
         /* Get Byaml Data */
-        dd::res::ByamlData left_data;
-        dd::res::ByamlData right_data;
+        vp::res::ByamlData left_data;
+        vp::res::ByamlData right_data;
         l_iterator->TryGetByamlDataByIndex(std::addressof(left_data), i);
 
         /* Find if the key is not found in the other byaml */
@@ -753,12 +779,13 @@ void DiffByamlIterator(dd::res::ByamlIterator *l_iterator, dd::res::ByamlIterato
     }
 }
 
+
 /* Note; only works when unique values */
 class ByamlDictionaryParser {
     private:
         struct IdentifierNode {
-            dd::res::ByamlIterator identifier_iter;
-            dd::res::ByamlData     identifier_value;
+            vp::res::ByamlIterator identifier_iter;
+            vp::res::ByamlData     identifier_value;
             u32                    index;
         };
     public:
@@ -766,7 +793,7 @@ class ByamlDictionaryParser {
     public:
         IdentifierNode          *m_identifier_node_array;
         const char              *identifier_key;
-        dd::res::ByamlIterator   m_root_iter;
+        vp::res::ByamlIterator   m_root_iter;
     private:
         static int SortIdentifiers(IdentifierNode *lhs, IdentifierNode *rhs) {
             return CompareByamlData(std::addressof(lhs->identifier_iter), std::addressof(rhs->identifier_iter), lhs->identifier_value, rhs->identifier_value);
@@ -777,7 +804,7 @@ class ByamlDictionaryParser {
             this->Finalize();
         }
 
-        bool Initialize(dd::res::ByamlIterator *root_iter, const char *identifier_key) {
+        bool Initialize(vp::res::ByamlIterator *root_iter, const char *identifier_key) {
 
             /* Integrity checks */
             if (root_iter == nullptr || identifier_key == nullptr || root_iter->IsValid() == false || root_iter->GetDataType() == 0) { return false; }
@@ -821,7 +848,7 @@ class ByamlDictionaryParser {
             return 0xffff'ffff;
         }
 
-        ALWAYS_INLINE bool DiffAllByamlData(ByamlDictionaryParser *r_parser, const char *array_name_key, u32 indent_level, bool is_print) {
+        ALWAYS_INLINE bool DiffAllByamlData(ByamlDictionaryParser *r_parser, const char *array_name_key, ByamlDataOverrideCallback override_callback, u32 indent_level, bool is_print) {
 
             /* Compare and print all shared byaml data */
             ByamlDictionaryParser::IdentifierNode *l_nodes = this->GetNodeArray();
@@ -829,15 +856,15 @@ class ByamlDictionaryParser {
                 const u32 r_entry_index = r_parser->FindEntryIndex(std::addressof(l_nodes[i]));
                 if (r_entry_index == ByamlDictionaryParser::InvalidIndex) { if (is_print == false) { return false; } continue; }
 
-                dd::res::ByamlData l_data;
+                vp::res::ByamlData l_data;
                 m_root_iter.TryGetByamlDataByIndex(std::addressof(l_data), i);
-                dd::res::ByamlData r_data;
+                vp::res::ByamlData r_data;
                 r_parser->m_root_iter.TryGetByamlDataByIndex(std::addressof(r_data), r_entry_index);
 
                 const bool cmp = CompareByamlData(std::addressof(m_root_iter), std::addressof(r_parser->m_root_iter), l_data, r_data);
                 if (cmp == 0) { continue; }
                 if (is_print == false) { return false; }
-                DiffByamlData(std::addressof(m_root_iter), std::addressof(r_parser->m_root_iter), l_data, r_data, i, r_entry_index, array_name_key, indent_level);
+                DiffByamlData(std::addressof(m_root_iter), std::addressof(r_parser->m_root_iter), l_data, r_data, i, r_entry_index, array_name_key, override_callback, indent_level);
             }
             return true;
         }
@@ -850,7 +877,7 @@ class ByamlDictionaryParser {
                 const u32 r_entry_index = other_parser->FindEntryIndex(std::addressof(nodes[i]));
                 if (r_entry_index != ByamlDictionaryParser::InvalidIndex) { continue; }
 
-                dd::res::ByamlData data;
+                vp::res::ByamlData data;
                 m_root_iter.TryGetByamlDataByIndex(std::addressof(data), i);
                 PrintByamlDataSingle(std::addressof(m_root_iter), data, i, array_name_key, indent_level, print_side);
             }
@@ -861,13 +888,13 @@ class ByamlDictionaryParser {
             //ByamlDictionaryParser::IdentifierNode *nodes = this->GetNodeArray();
             for (u32 i = 0; i < this->GetNodeCount(); ++i) {
 
-                dd::res::ByamlData data;
+                vp::res::ByamlData data;
                 m_root_iter.TryGetByamlDataByIndex(std::addressof(data), i);
                 PrintByamlDataSingle(std::addressof(m_root_iter), data, i, array_name_key, indent_level, print_side);
             }
         }
 
-        constexpr ALWAYS_INLINE u32 GetNodeCount() const { return m_root_iter.GetDataCount();}
+        ALWAYS_INLINE u32 GetNodeCount() const { return m_root_iter.GetDataCount();}
         constexpr ALWAYS_INLINE IdentifierNode *GetNodeArray() const { return m_identifier_node_array;}
 };
 
@@ -909,7 +936,7 @@ ByamlRstblFileVariation GetByamlRstblFileVariationByName(dd::util::FixedString<d
 
     if (file_name->Contains("ActorInfo") != 0xffff'ffff)                   { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("AmiiboData") != 0xffff'ffff)                  { return ByamlRstblFileVariation::RowIdDictionary; }
-    if (file_name->Contains("Amiiboold") != 0xffff'ffff)                   { return ByamlRstblFileVariation::RowIdDictionary; }
+    if (file_name->Contains("AmiiboId") != 0xffff'ffff)                   { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("BadgeInfo") != 0xffff'ffff)                   { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("BgmInfo") != 0xffff'ffff)                     { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("BottomInfo") != 0xffff'ffff)                  { return ByamlRstblFileVariation::RowIdDictionary; }
@@ -947,6 +974,7 @@ ByamlRstblFileVariation GetByamlRstblFileVariationByName(dd::util::FixedString<d
     if (file_name->Contains("MiniGameCardSleeve") != 0xffff'ffff)          { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("MiniGameGameNpcData") != 0xffff'ffff)         { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("MiniGameCardPresetDeck") != 0xffff'ffff)      { return ByamlRstblFileVariation::RowIdDictionary; }
+    if (file_name->Contains("MiniGamePresetDeck") != 0xffff'ffff)          { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("MissionConversationSetParam") != 0xffff'ffff) { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("MissionMapInfo") != 0xffff'ffff)              { return ByamlRstblFileVariation::RowIdDictionary; }
     if (file_name->Contains("MysteryBoxData") != 0xffff'ffff)              { return ByamlRstblFileVariation::RowIdDictionary; }
@@ -981,7 +1009,7 @@ ByamlGenericFileVariation GetByamlGenericFileVariationByName(dd::util::FixedStri
     if (file_name->Contains("PhiveConfig") != 0xffff'ffff)    { return ByamlGenericFileVariation::PhiveConfig; }
     if (file_name->Contains("EffectFileInfo") != 0xffff'ffff) { return ByamlGenericFileVariation::EffectFileInfo; }
     if (file_name->Contains("BarslistPack") != 0xffff'ffff)   { return ByamlGenericFileVariation::BarslistPack; }
-    if (file_name->Contains("Bkdat") != 0xffff'ffff)   { return ByamlGenericFileVariation::Bkdat; }
+    if (file_name->Contains("bkdat") != 0xffff'ffff)          { return ByamlGenericFileVariation::Bkdat; }
 
     return ByamlGenericFileVariation::Unknown;
 }

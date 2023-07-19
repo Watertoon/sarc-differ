@@ -61,6 +61,7 @@ struct StringCompare {
     }
 };
 
+#define NO_CONSTANT_PROPAGATION __attribute__((optimize("-fno-ipa-cp")))
 class RomfsDirectoryParser {
     public:
         static constexpr inline u32 InvalidIndex = 0xFFFF'FFFF;
@@ -74,7 +75,7 @@ class RomfsDirectoryParser {
             this->Finalize();
         }
 
-        bool Initialize(const char *path) {
+        NO_CONSTANT_PROPAGATION bool InitializeByPath(const char *path) {
 
             if (path == nullptr) { return false; }
 

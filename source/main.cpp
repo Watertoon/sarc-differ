@@ -66,6 +66,7 @@ enum class PrintSide : u32 {
     Right = 2
 };
 
+#include "util_endian.hpp"
 #include "util_tstring.hpp"
 #include "util_charactercode.hpp"
 #include "util_alignment.hpp"
@@ -310,7 +311,7 @@ FileType GetFileTypeSingle(void *file, u32 file_size) {
         return FileType_Bfres;
     } else if (sizeof(dd::res::ResBea) <= file_size && dd::res::ResBea::IsValid(file) == true) {
         return FileType_Bea;
-    } else if (sizeof(dd::res::ResByaml) <= file_size && dd::res::ResByaml::IsValid(file) == true) {
+    } else if (sizeof(vp::res::ResByaml) <= file_size && reinterpret_cast<vp::res::ResByaml*>((file))->IsValid() == true) {
         return FileType_Byaml;
     }
     return FileType_Invalid;
@@ -369,7 +370,6 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
 
     /* Check files are different on a byte level */
     if (left_size == right_size && ::memcmp(left_file, right_file, left_size) == 0) { return true; }
-    if (0x10 > left_size || 0x10 > right_size) { return false; }
 
     /* Decompress files if necessary */
     void   *left_full       = left_file;
@@ -418,7 +418,7 @@ bool ProcessFilesImpl(void *left_file, size_t left_size, void *right_file, size_
             dd::util::GetFileNameFromPathNoExtension(std::addressof(file_name), right_path);
             switch(GetByamlFileTypeByExtension(std::addressof(extension))) {
                 case ByamlFileType::Bgyml:
-                    DiffBgyml(left_full, right_full, indent_level, true);
+                    DiffByamlFull(left_full, right_full, indent_level, true);
                     break;
                 case ByamlFileType::AiDefn:
                     //DiffAiDefn(left_full, right_full, indent_level);
@@ -511,8 +511,8 @@ int main(int argc, char **argv) {
     /* Directory iteration */
     RomfsDirectoryParser left_iterator = {};
     RomfsDirectoryParser right_iterator = {};
-    const bool l_result = left_iterator.Initialize(argv[1]);
-    const bool r_result = right_iterator.Initialize(argv[2]);
+    const bool l_result = left_iterator.InitializeByPath(argv[1]);
+    const bool r_result = right_iterator.InitializeByPath(argv[2]);
     if (l_result == false || r_result == false) {
         std::cout << "options(required): [left romfs dir] [right romfs dir]" << std::endl;
         return 1;
